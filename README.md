@@ -5,8 +5,8 @@ This repository is for the project Mask Controlled Paraphrase Generation.
 ## Directory
 + **main/res** - Resources including model check points, datasets, and experiment records
 + **main/src** - Source code including model structures, training pipelines, and utility functions
-+ *res/data* - Need to place the data pickle file under here
-+ *res/lm* - Need to place the bert-base-uncased repo under here
++ **res/data** - Need to place the data pickle file under here
++ **res/lm** - Need to place the bert-base-uncased repo under here
 ```
 Mask-Controlled-Paraphrase-Generation
 ├── README.md
@@ -63,6 +63,8 @@ $ python
 ……nltk.download('punkt')
 ……nltk.download('wordnet')
 ……exit()
+$ cd res/lm
+$ git clone https://huggingface.co/bert-base-uncased
 ```
 
 ## Authors
