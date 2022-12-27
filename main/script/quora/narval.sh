@@ -25,8 +25,8 @@ python main.py \
     --seed=$SEED \
     --mask=$MASK \
     --x_x_copy=False \
-    --y_x_switch=True \
-    --ld=False \
+    --y_x_switch=False \
+    --ld=True \
     --model=$MODEL \
     --encoder=bert-base-uncased \
     --decoder=bert-base-uncased \

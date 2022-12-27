@@ -8,6 +8,8 @@ __email__ = 'Email'
 # built-in
 import copy
 # public
+from tqdm import tqdm
+from transformers import AutoTokenizer
 # private
 from src.augment import utils
 from src.augment.base import Base_Aug
@@ -53,6 +55,34 @@ class YXSwitch(Base_Aug):
         xs_list, ys_list = utils.remove_duplicates(xs_list, ys_list)
         return xs_list, ys_list
 
+
+class LinearDecomposition(Base_Aug):
+    """docstring for LinearDecomposition"""
+    def __init__(self, config, **kwargs):
+        super(LinearDecomposition, self).__init__(config)
+        self.update_config(**kwargs)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.config.ENCODER_PATH)
+
+    def update_config(self, **kwargs):
+        # update configuration accordingly
+        for k,v in kwargs.items():
+            setattr(self.config, k, v)
+
+    def do_aug(self, raw_xs_list, raw_ys_list):
+        # linear decompositional augmentation
+        aug_xs_list, aug_ys_list = [], []
+        for x, y in zip(tqdm(raw_xs_list), raw_ys_list):
+            aug_x, aug_y = utils.linear_decompose(x, y, self.tokenizer)
+            if aug_x and aug_y and aug_x != aug_y:
+                aug_xs_list.append(aug_x)
+                aug_ys_list.append(aug_y)
+        xs_list = raw_xs_list + aug_xs_list
+        ys_list = raw_ys_list + aug_ys_list
+        # remove duplicates
+        xs_list, ys_list = utils.remove_duplicates(xs_list, ys_list)
+        return xs_list, ys_list
+
+
 class General_Aug(Base_Aug):
     """docstring for General_Aug"""
     def __init__(self, config, **kwargs):
@@ -60,6 +90,7 @@ class General_Aug(Base_Aug):
         self.update_config(**kwargs)
         self.xxcopy = XXCopy(config)
         self.yxswitch = YXSwitch(config)
+        self.ld = LinearDecomposition(config)
 
     def update_config(self, **kwargs):
         # update configuration accordingly
@@ -70,6 +101,9 @@ class General_Aug(Base_Aug):
         if do_copy:
             raw_xs_list, raw_ys_list = copy.deepcopy(raw_xs_list), copy.deepcopy(raw_ys_list)
         # augmentation
+        print('Apply augmentation as follow:')
+        for aug in self.config.augs:
+            print(f'\t{aug}: {self.config.__dict__[aug]}')
         match self.augs:
             # none
             case (False, False, False):
@@ -77,6 +111,10 @@ class General_Aug(Base_Aug):
             # x_x_copy
             case (True, False, False):
                 return self.xxcopy.do_aug(raw_xs_list, raw_ys_list)
+            # y_x_switch
             case (False, True, False):
-                return self.yxswitch.do_aug(raw_xs_list, raw_ys_list)   
+                return self.yxswitch.do_aug(raw_xs_list, raw_ys_list)
+            # linear decomposition
+            case (False, False, True):
+                return self.ld.do_aug(raw_xs_list, raw_ys_list)
         raise NotImplementedError

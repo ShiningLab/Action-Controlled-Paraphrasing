@@ -41,8 +41,8 @@ def init_args():
         , default=['x_x_copy', 'y_x_switch', 'ld']
         )
     parser.add_argument('--x_x_copy', type=str2bool, default=False)
-    parser.add_argument('--y_x_switch', type=str2bool, default=True)
-    parser.add_argument('--ld', type=str2bool, default=False)  # linear-decomposition
+    parser.add_argument('--y_x_switch', type=str2bool, default=False)
+    parser.add_argument('--ld', type=str2bool, default=True)  # linear decomposition
     # bert-base-uncased
     parser.add_argument('--encoder', type=str, default='bert-base-uncased')
     parser.add_argument('--decoder', type=str, default='bert-base-uncased')
