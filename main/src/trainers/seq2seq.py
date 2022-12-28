@@ -64,8 +64,6 @@ class Trainer(Base_Trainer):
         # enable tokenizer multi-processing
         if self.config.num_workers > 0:
             os.environ["TOKENIZERS_PARALLELISM"] = "true"
-        # 0 for remove, 1 for keep, 2 for mask
-        self.config.mask_token_id = 2
         # augmenator
         self.augmenator = General_Aug(self.config)
         # dataset class
@@ -94,29 +92,23 @@ class Trainer(Base_Trainer):
         data.sort(key=len, reverse=True)
         if self.config.mask:
             raw_xs, raw_ys, xs, ys, masks = map(list, zip(*data))
+            xs, ys = torch.stack(xs), torch.stack(ys)
+            # apply mask strategy
             masks = helper.process_masks(masks, self.config, self.model.training)
+            # mask padding
+            masks = torch.stack(masks)
+            masks = helper.pad_masks(xs, masks, self.config)
             if self.model.training:
-                inputs_dict = {
-                'xs': torch.stack(xs)
-                , 'ys': torch.stack(ys)
-                , 'masks': torch.stack(masks)
-                }
+                inputs_dict = {'xs': xs, 'ys': ys, 'masks': masks}
             else:
-                inputs_dict = {
-                'xs': torch.stack(xs)
-                , 'masks': torch.stack(masks)
-                }
+                inputs_dict = {'xs': xs, 'masks': masks}
         else:
             raw_xs, raw_ys, xs, ys = map(list, zip(*data))
+            xs, ys = torch.stack(xs), torch.stack(ys)
             if self.model.training:
-                inputs_dict = {
-                'xs': torch.stack(xs)
-                , 'ys': torch.stack(ys)
-                }
+                inputs_dict = {'xs': xs, 'ys': ys}
             else:
-                inputs_dict = {
-                'xs': torch.stack(xs)
-                }
+                inputs_dict = {'xs': xs}
         return (raw_xs, raw_ys), inputs_dict
 
     def setup_dataloader(self):

@@ -31,8 +31,11 @@ def init_args():
     # sep_quora for newly separated Quora Question Pair
     parser.add_argument('--task', type=str, default='sep_quora')
     # mask control
-    parser.add_argument('--mask', type=str2bool, default=False)
-    parser.add_argument('--mask_size', type=int, default=3)
+    parser.add_argument('--mask', type=str2bool, default=True)
+    # 0 for remove, 1 for keep, 2 for inference, 3 for padding
+    parser.add_argument('--mask_size', type=int, default=4)
+    parser.add_argument('--mask_infer_token_id', type=int, default=2)
+    parser.add_argument('--mask_pad_token_id', type=int, default=3)
     parser.add_argument('--mask_weights', type=list, default=[0.8, 0.1, 0.1])
     # data augmentation
     parser.add_argument(

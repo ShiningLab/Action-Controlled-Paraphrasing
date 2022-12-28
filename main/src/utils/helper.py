@@ -93,7 +93,7 @@ def process_masks(masks, config, training, do_copy=True):
         + 10% of the time: replace with a random mask
         + 10% of the time: replace with an inference mask
     for inference:
-        use mask token id only
+        use mask inference token id only
     """
     if do_copy:
         masks = copy.deepcopy(masks)
@@ -101,20 +101,28 @@ def process_masks(masks, config, training, do_copy=True):
         new_masks = []
         for m in masks:
             rand = np.random.choice(range(3), p=config.mask_weights)
-            if rand == 0:  # keep mask
-                pass
-            elif rand == 1:  # replace with a random mask
-                low = int(m.min().item())
-                high = int(m.max().item()) + 1
-                size = m.shape
-                m = torch.randint(
-                    low=low
-                    , high=high
-                    , size=size
-                    )
-            else:  # replace with an inference mask
-                m = torch.full(m.shape, config.mask_token_id)
+            match rand:
+                case 0:  # keep the label mask
+                    pass
+                case 1:  # replace with a random mask
+                    low = 0
+                    high = config.mask_pad_token_id  # 3
+                    size = m.shape
+                    # in range of [0, 2]
+                    m = torch.randint(low=low, high=high, size=size)
+                case 2:  # replace with an inference mask
+                    m = torch.full(m.shape, config.mask_infer_token_id)
+                case other:
+                    raise NotImplementedError
             new_masks.append(m)
     else:
-        new_masks = [torch.full(m.shape, config.mask_token_id) for m in masks]
+        # inference mask only for validation and test
+        new_masks = [torch.full(m.shape, config.mask_infer_token_id) for m in masks]
     return new_masks
+
+def pad_masks(xs, masks, config):
+    pad_masks = torch.full(xs.shape, config.mask_pad_token_id)
+    for i in range(pad_masks.shape[0]):
+        pad_idx = (xs[i] != config.pad_token_id).sum().item()
+        pad_masks[i][:pad_idx] = masks[i][:pad_idx]
+    return pad_masks

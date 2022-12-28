@@ -53,6 +53,7 @@ class ModelGraph(nn.Module):
             self.mask_embeddings = nn.Embedding(
                 num_embeddings=self.config.mask_size
                 , embedding_dim=self.config.hidden_size
+                , padding_idx=self.config.mask_pad_token_id
                 )
 
     def update_config(self, **kwargs):

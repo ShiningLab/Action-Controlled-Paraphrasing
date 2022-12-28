@@ -56,10 +56,10 @@ class YXSwitch(Base_Aug):
         return xs_list, ys_list
 
 
-class LinearDecomposition(Base_Aug):
-    """docstring for LinearDecomposition"""
+class LinearDecompose(Base_Aug):
+    """docstring for LinearDecompose"""
     def __init__(self, config, **kwargs):
-        super(LinearDecomposition, self).__init__(config)
+        super(LinearDecompose, self).__init__(config)
         self.update_config(**kwargs)
         self.tokenizer = AutoTokenizer.from_pretrained(self.config.ENCODER_PATH)
 
@@ -73,7 +73,7 @@ class LinearDecomposition(Base_Aug):
         aug_xs_list, aug_ys_list = [], []
         for x, y in zip(tqdm(raw_xs_list), raw_ys_list):
             aug_x, aug_y = utils.linear_decompose(x, y, self.tokenizer)
-            if aug_x and aug_y and aug_x != aug_y:
+            if aug_x and aug_y and aug_x != aug_y and len(aug_x) > 1 and len(aug_y) > 1:
                 aug_xs_list.append(aug_x)
                 aug_ys_list.append(aug_y)
         xs_list = raw_xs_list + aug_xs_list
@@ -90,7 +90,7 @@ class General_Aug(Base_Aug):
         self.update_config(**kwargs)
         self.xxcopy = XXCopy(config)
         self.yxswitch = YXSwitch(config)
-        self.ld = LinearDecomposition(config)
+        self.ld = LinearDecompose(config)
 
     def update_config(self, **kwargs):
         # update configuration accordingly
