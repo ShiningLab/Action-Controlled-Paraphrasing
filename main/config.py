@@ -21,7 +21,7 @@ def str2bool(v):
     if v.lower() in ('no', 'false', 'f', 'n', '0'):
         return False
     raise argparse.ArgumentTypeError('Boolean value expected.')
-    
+
 def init_args():
     parser = argparse.ArgumentParser()
     # random seed
@@ -41,8 +41,8 @@ def init_args():
         , default=['x_x_copy', 'y_x_switch', 'ld']
         )
     parser.add_argument('--x_x_copy', type=str2bool, default=False)
-    parser.add_argument('--y_x_switch', type=str2bool, default=False)
-    parser.add_argument('--ld', type=str2bool, default=True)  # linear decomposition
+    parser.add_argument('--y_x_switch', type=str2bool, default=True)
+    parser.add_argument('--ld', type=str2bool, default=True)  # linear decompose
     # bert-base-uncased
     parser.add_argument('--encoder', type=str, default='bert-base-uncased')
     parser.add_argument('--decoder', type=str, default='bert-base-uncased')

@@ -114,7 +114,13 @@ class General_Aug(Base_Aug):
             # y_x_switch
             case (False, True, False):
                 return self.yxswitch.do_aug(raw_xs_list, raw_ys_list)
-            # linear decomposition
+            # linear decompose
             case (False, False, True):
                 return self.ld.do_aug(raw_xs_list, raw_ys_list)
+            # y_x_switch + linear decompose
+            case (False, True, True):
+                xs_list, ys_list = self.yxswitch.do_aug(raw_xs_list, raw_ys_list)
+                xs_list, ys_list = self.ld.do_aug(xs_list, ys_list)
+                xs_list, ys_list = self.yxswitch.do_aug(xs_list, ys_list)
+                return xs_list, ys_list
         raise NotImplementedError
