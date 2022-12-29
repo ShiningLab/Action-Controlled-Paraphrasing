@@ -60,6 +60,7 @@ class Base_Trainer(object):
         checkpoint_to_save = {
         'step': self.step
         , 'epoch': self.epoch
+        # , 'val_epoch': self.val_epoch
         , 'log_dict': self.log_dict
         , 'model': self.model.state_dict()
         , 'optimizer': self.optimizer.state_dict()
@@ -72,6 +73,7 @@ class Base_Trainer(object):
         ckpt_to_load =  torch.load(self.config.CKPT_PT, map_location=self.config.device) 
         self.step = ckpt_to_load['step']
         self.epoch = ckpt_to_load['epoch']
+        # self.val_epoch  = ckpt_to_load['val_epoch']
         self.log_dict = ckpt_to_load['log_dict']
         self.model.load_state_dict(ckpt_to_load['model'])
         self.optimizer.load_state_dict(ckpt_to_load['optimizer'])

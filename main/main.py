@@ -29,17 +29,15 @@ class Paraphraser(object):
     def initialize(self):
         # setup random seed
         helper.set_seed(self.config.seed)
-
-    def learn(self):
-        # setup model
-        # initialize tranier
-        trainer = helper.get_trainer(self.config)
-        # training
-        trainer.train()
+        # trainer
+        self.trainer = helper.get_trainer(self.config)
+        # tester
+        # self.tester = helper.get_tester(self.trainer)
 
 def main():
     pp = Paraphraser()
-    pp.learn()
+    pp.trainer.train()
+    # pp.tester.test()
 
 if __name__ == '__main__':
       main()

@@ -13,7 +13,8 @@ import numpy as np
 import torch
 # private
 from src.models import tfm
-from src.trainers import seq2seq
+from src.trainers import seq2seq as seq2seq_trainer
+from src.testers import seq2seq as seq2seq_tester
 from src.datasets import quora
 
 
@@ -65,7 +66,10 @@ def get_model(config):
     raise NotImplementedError
 
 def get_trainer(config):
-    return seq2seq.Trainer(config)
+    return seq2seq_trainer.Trainer(config)
+
+def get_tester(trainer):
+    return seq2seq_tester.Tester(trainer)
 
 def get_dataset(config):
     match config.task:

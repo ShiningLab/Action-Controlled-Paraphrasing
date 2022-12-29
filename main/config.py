@@ -34,6 +34,8 @@ def init_args():
     parser.add_argument('--mask', type=str2bool, default=True)
     # 0 for remove, 1 for keep, 2 for inference, 3 for padding
     parser.add_argument('--mask_size', type=int, default=4)
+    parser.add_argument('--mask_delete_token_id', type=int, default=0)
+    parser.add_argument('--mask_keep_token_id', type=int, default=1)
     parser.add_argument('--mask_infer_token_id', type=int, default=2)
     parser.add_argument('--mask_pad_token_id', type=int, default=3)
     parser.add_argument('--mask_weights', type=list, default=[0.8, 0.1, 0.1])
@@ -44,8 +46,8 @@ def init_args():
         , default=['x_x_copy', 'y_x_switch', 'ld']
         )
     parser.add_argument('--x_x_copy', type=str2bool, default=False)
-    parser.add_argument('--y_x_switch', type=str2bool, default=False)
-    parser.add_argument('--ld', type=str2bool, default=True)  # linear decompose
+    parser.add_argument('--y_x_switch', type=str2bool, default=True)
+    parser.add_argument('--ld', type=str2bool, default=False)  # linear decompose
     # bert-base-uncased
     parser.add_argument('--encoder', type=str, default='bert-base-uncased')
     parser.add_argument('--decoder', type=str, default='bert-base-uncased')
