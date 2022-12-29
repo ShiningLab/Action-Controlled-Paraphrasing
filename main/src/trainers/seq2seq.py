@@ -227,9 +227,6 @@ class Trainer(Base_Trainer):
                 self.early_stopping()
             # maximum training steps:
             if self.val_epoch > self.config.val_patience or self.step > self.config.max_steps:
-                # do a test finally
-                if self.config.test:
-                    self.eval('test')
                 # save log
                 self.log_dict['end_time'] = datetime.datetime.now()
                 helper.save_pickle(self.config.LOG_PKL, self.log_dict)
@@ -270,9 +267,9 @@ class Trainer(Base_Trainer):
             # update
             for mode in self.config.eva_modes:
                 # best evaluation
-                self.log_dict[mode]['best_eval'] =  self.log_dict[mode]['eval']
+                self.log_dict[mode]['best_eval'] =  copy.deepcopy(self.log_dict[mode]['eval'])
                 # best results
-                self.results_dict[mode]['best_results'] =  self.results_dict[mode]['results']
+                self.results_dict[mode]['best_results'] =  copy.deepcopy(self.results_dict[mode]['results'])
             # reset validation epoch
             self.val_epoch = 0
             # save trainer

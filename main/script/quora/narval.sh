@@ -9,13 +9,13 @@
 #SBATCH -J shining  # job name
 #SBATCH --mail-type=ALL  # email notification for certain types of events
 #SBATCH --mail-user=ning.shi@ualberta.ca  # email address for notification
-#SBATCH -e sep_quora_mask_0.error  # error log
-#SBATCH -o sep_quora_mask_0.out  # output log
+#SBATCH -e sep_quora_0.error  # error log
+#SBATCH -o sep_quora_0.out  # output log
 
 MODEL=$(echo 'tfm')  # tfm
 TASK=$(echo 'sep_quora')  # ori_quora, sep_quora
 SEED=$(echo '0')  # 0, 1, 2, 3, 4
-MASK=$(echo 'True') 
+MASK=$(echo 'False') 
 
 module load python/3.10.2
 source /home/shining/pyvenv/cmput651/bin/activate
@@ -25,7 +25,7 @@ python main.py \
     --seed=$SEED \
     --mask=$MASK \
     --x_x_copy=False \
-    --y_x_switch=True \
+    --y_x_switch=False \
     --ld=True \
     --model=$MODEL \
     --encoder=bert-base-uncased \
