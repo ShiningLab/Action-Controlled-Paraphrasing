@@ -6,7 +6,7 @@ __email__ = 'Email'
 
 # dependency
 # built-in
-import os, sys, datetime, logging
+import os, sys, copy, datetime, logging
 # public
 import torch
 from torch.utils import data as torch_data
@@ -227,6 +227,9 @@ class Trainer(Base_Trainer):
                 self.early_stopping()
             # maximum training steps:
             if self.val_epoch > self.config.val_patience or self.step > self.config.max_steps:
+                # do a test finally
+                if self.config.test:
+                    self.eval('test')
                 # save log
                 self.log_dict['end_time'] = datetime.datetime.now()
                 helper.save_pickle(self.config.LOG_PKL, self.log_dict)

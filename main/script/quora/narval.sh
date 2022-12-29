@@ -15,7 +15,7 @@
 MODEL=$(echo 'tfm')  # tfm
 TASK=$(echo 'sep_quora')  # ori_quora, sep_quora
 SEED=$(echo '0')  # 0, 1, 2, 3, 4
-MASK=$(echo 'False') 
+MASK=$(echo 'True') 
 
 module load python/3.10.2
 source /home/shining/pyvenv/cmput651/bin/activate
