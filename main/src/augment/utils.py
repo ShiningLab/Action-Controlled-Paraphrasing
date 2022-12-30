@@ -86,5 +86,6 @@ def linear_decompose(x: str, y: str, tokenizer, low=1) -> (str, str):
             tk_x, tk_y = tk_x[lcs_len:], tk_y[lcs_len:]
         else:
             tk_x, tk_y = tk_x[:lcs_len], tk_y[:lcs_len]
-        return detokenize(tk_x, tokenizer), detokenize(tk_y, tokenizer)
+        if len(tk_x) > low and len(tk_y) > low:
+            return detokenize(tk_x, tokenizer), detokenize(tk_y, tokenizer)
     return '', ''

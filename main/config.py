@@ -43,11 +43,15 @@ def init_args():
     parser.add_argument(
         '--augs'
         , type=list
-        , default=['x_x_copy', 'y_x_switch', 'ld']
+        , default=['x_x_copy', 'y_x_switch', 'ld', 'lc']
         )
     parser.add_argument('--x_x_copy', type=str2bool, default=False)
     parser.add_argument('--y_x_switch', type=str2bool, default=True)
-    parser.add_argument('--ld', type=str2bool, default=False)  # linear decompose
+    parser.add_argument('--ld', type=str2bool, default=True)  # linear decompose
+    parser.add_argument('--lc', type=str2bool, default=False)  # linear compose
+    parser.add_argument('--lc_low', type=int, default=2)  # linear compose
+    parser.add_argument('--lc_compo_size', type=int, default=512)  # linear compose
+
     # bert-base-uncased
     parser.add_argument('--encoder', type=str, default='bert-base-uncased')
     parser.add_argument('--decoder', type=str, default='bert-base-uncased')
@@ -57,6 +61,8 @@ def init_args():
     parser.add_argument('--num_hidden_layers', type=int, default=3)
     parser.add_argument('--num_attention_heads', type=int, default=9)
     parser.add_argument('--intermediate_size', type=int, default=1024)
+    parser.add_argument('--en_max_len', type=int, default=47)
+    parser.add_argument('--de_max_len', type=int, default=47)
     # training
     parser.add_argument('--val', type=str2bool, default=True)
     parser.add_argument('--test', type=str2bool, default=True)
@@ -100,10 +106,13 @@ class Config():
         self.DECODER_PATH = os.path.join(self.LM_PATH, self.decoder)
         os.makedirs(self.DECODER_PATH, exist_ok=True)
         # checkpoints
+        self.train_size, self.val_size, self.test_size = 310302, 4000, 20000
         self.CKPT_PATH = os.path.join(
             self.RESOURCE_PATH, 'ckpts', str(self.mask), self.task, self.model, str(self.seed)
             )
         os.makedirs(self.CKPT_PATH, exist_ok=True)
+        self.CKPT_PT = f'{self.train_size}_{self.val_size}_{self.test_size}.pt'
+        self.CKPT_PT = os.path.join(self.CKPT_PATH, self.CKPT_PT)
         # log
         self.LOG_PATH = os.path.join(
             self.RESOURCE_PATH, 'log', str(self.mask), self.task, self.model, str(self.seed)

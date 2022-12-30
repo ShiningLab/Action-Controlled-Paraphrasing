@@ -11,7 +11,7 @@ import os, sys, copy, datetime, logging
 import torch
 from torch.utils import data as torch_data
 from transformers import AutoTokenizer, get_linear_schedule_with_warmup
-import tqdm
+from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 # private
 from src.utils import helper
@@ -44,11 +44,6 @@ class Trainer(Base_Trainer):
         super(Trainer, self).__init__(config)
         self.update_config(**kwargs)
         self.initialize()
-        self.setup_dataloader()
-        # show configurations
-        logger.info('*Configurations:*')
-        for k, v in self.config.__dict__.items():
-            logger.info(f'\t{k}: {v}')
 
     def update_config(self, **kwargs):
         # update configuration accordingly
@@ -166,7 +161,7 @@ class Trainer(Base_Trainer):
         # initialization
         epoch_xs, epoch_ys, epoch_ys_ = [], [], []
         # dataloader
-        dataloader = tqdm.tqdm(self.dataloader_dict[mode])
+        dataloader = tqdm(self.dataloader_dict[mode])
         if mode == 'train':
             epoch_loss, epoch_steps = 0., 0
             with logging_redirect_tqdm():
@@ -208,6 +203,13 @@ class Trainer(Base_Trainer):
             return epoch_xs, epoch_ys, epoch_ys_
 
     def train(self):
+        # get dataloader
+        self.setup_dataloader()
+        # show configurations
+        logger.info('*Configurations:*')
+        for k, v in self.config.__dict__.items():
+            logger.info(f'\t{k}: {v}')
+        # go
         logger.info("Start Training...")
         while True:
             self.epoch += 1
