@@ -93,17 +93,21 @@ class Trainer(Base_Trainer):
             # mask padding
             masks = torch.stack(masks)
             masks = helper.pad_masks(xs, masks, self.config)
-            if self.model.training:
+            if self.mode in ['train', 'val']:
                 inputs_dict = {'xs': xs, 'ys': ys, 'masks': masks}
-            else:
+            elif self.mode in ['test']:
                 inputs_dict = {'xs': xs, 'masks': masks}
+            else:
+                raise NotImplementedError
         else:
             raw_xs, raw_ys, xs, ys = map(list, zip(*data))
             xs, ys = torch.stack(xs), torch.stack(ys)
-            if self.model.training:
+            if self.mode in ['train', 'val']:
                 inputs_dict = {'xs': xs, 'ys': ys}
-            else:
+            elif self.mode in ['test']:
                 inputs_dict = {'xs': xs}
+            else:
+                raise NotImplementedError
         return (raw_xs, raw_ys), inputs_dict
 
     def setup_dataloader(self):
@@ -119,8 +123,6 @@ class Trainer(Base_Trainer):
             )
         self.dataloader_dict['train'] = train_dataloader
         # update config
-        self.config.en_max_len = train_dataset.en_max_len
-        self.config.de_max_len = train_dataset.de_max_len
         for mode in self.config.eva_modes:
             dataset = self.Dataset(mode, self.tokenizer, self.config)
             dataloader = torch_data.DataLoader(
@@ -134,8 +136,6 @@ class Trainer(Base_Trainer):
                 )
             self.dataloader_dict[mode] = dataloader
             # update config
-            self.config.en_max_len = max(self.config.en_max_len, dataset.en_max_len)
-            self.config.de_max_len = max(self.config.de_max_len, dataset.de_max_len)
             if mode == 'val':
                 self.config.val_size = len(dataset)
             elif mode == 'test':
@@ -159,6 +159,7 @@ class Trainer(Base_Trainer):
 
     def one_epoch(self, mode):
         # initialization
+        self.mode = mode
         epoch_xs, epoch_ys, epoch_ys_ = [], [], []
         # dataloader
         dataloader = tqdm(self.dataloader_dict[mode])
@@ -189,8 +190,26 @@ class Trainer(Base_Trainer):
                     epoch_ys_ += ys_
                     # break
             return epoch_loss / epoch_steps, epoch_xs, epoch_ys, epoch_ys_
+        elif mode == 'val':
+            epoch_loss, epoch_steps = 0., 0
+            for (raw_xs, raw_ys), inputs_dict in dataloader:
+                # move to device
+                inputs_dict = {k: v.to(self.config.device) for k, v in inputs_dict.items() if v is not None}
+                # model feedward
+                ys_, loss = self.model(**inputs_dict)
+                # post processing
+                ys_ = torch.argmax(ys_, dim=-1).cpu().detach()
+                ys_ = self.tokenizer.batch_decode(ys_, skip_special_tokens=True)
+                epoch_loss += loss.item()
+                epoch_steps += 1
+                epoch_xs += raw_xs
+                epoch_ys += raw_ys
+                epoch_ys_ += ys_
+                # break
+            return epoch_loss / epoch_steps, epoch_xs, epoch_ys, epoch_ys_
         else:
             for (raw_xs, raw_ys), inputs_dict in dataloader:
+                # move to device
                 inputs_dict = {k: v.to(self.config.device) for k, v in inputs_dict.items() if v is not None}
                 ys_ = self.model.generate(**inputs_dict)  # batch_size, de_max_len
                 # post processing
@@ -200,7 +219,7 @@ class Trainer(Base_Trainer):
                 epoch_ys += raw_ys
                 epoch_ys_ += ys_
                 # break
-            return epoch_xs, epoch_ys, epoch_ys_
+            return float('inf'), epoch_xs, epoch_ys, epoch_ys_
 
     def train(self):
         # get dataloader
@@ -210,7 +229,7 @@ class Trainer(Base_Trainer):
         for k, v in self.config.__dict__.items():
             logger.info(f'\t{k}: {v}')
         # go
-        logger.info("Start Training...")
+        logger.info("Start training...")
         while True:
             self.epoch += 1
             self.model.train()
@@ -243,9 +262,9 @@ class Trainer(Base_Trainer):
     def eval(self, mode):
         self.model.eval()
         with torch.no_grad():
-            xs, ys, ys_ = self.one_epoch(mode)
+            loss, xs, ys, ys_ = self.one_epoch(mode)
             # evaluation
-            evaluater = Evaluater(xs, ys, ys_, self.config, sample=False)
+            evaluater = Evaluater(xs, ys, ys_, self.config, loss, sample=False)
             self.log_dict[mode]['eval'] += [[self.step, self.epoch, evaluater.results]]
             # save results
             for k, v in zip(['xs', 'ys', 'ys_'], [xs, ys, ys_]):
@@ -257,9 +276,9 @@ class Trainer(Base_Trainer):
 
     def early_stopping(self):
         # check if early stop based on the validation
-        if self.log_dict['val']['eval'][-1][-1]['keymetric'] > self.log_dict['best_val_metric']:
+        if self.log_dict['val']['eval'][-1][-1]['keymetric'] < self.log_dict['best_val_metric']:
             logger.info(
-                'Got the best validation so far! ({} > {})'.format(
+                'Got the best validation so far! ({} < {})'.format(
                     self.log_dict['val']['eval'][-1][-1]['keymetric']
                     , self.log_dict['best_val_metric']
                     )

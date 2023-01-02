@@ -41,6 +41,8 @@ class ModelGraph(nn.Module):
             , decoder_config=decoder_config
             )
         tfm_config.vocab_size = decoder_config.vocab_size
+        tfm_config.bos_token_id = self.config.bos_token_id
+        tfm_config.eos_token_id = self.config.eos_token_id
         tfm_config.pad_token_id = self.config.pad_token_id
         tfm_config.decoder_start_token_id = self.config.bos_token_id
         # initialize model
@@ -87,20 +89,26 @@ class ModelGraph(nn.Module):
             inputs_embeds += masks_embeds
             return self.tfm.generate(
                 inputs_embeds =inputs_embeds
-                , max_new_tokens=self.config.de_max_len
+                # text + eos
+                , max_new_tokens=self.config.de_max_len + 1
                 , num_beams=self.config.num_beams
                 , early_stopping=True
+                , do_sample=True
                 , pad_token_id=self.config.pad_token_id
                 , bos_token_id=self.config.bos_token_id
                 , eos_token_id=self.config.eos_token_id
+                , decoder_start_token_id=self.config.bos_token_id
                 )
         else:
             return self.tfm.generate(
-                input_ids =xs
-                , max_new_tokens=self.config.de_max_len
+                input_ids=xs
+                # text + eos
+                , max_new_tokens=self.config.de_max_len + 1
                 , num_beams=self.config.num_beams
                 , early_stopping=True
+                , do_sample=True
                 , pad_token_id=self.config.pad_token_id
                 , bos_token_id=self.config.bos_token_id
                 , eos_token_id=self.config.eos_token_id
+                , decoder_start_token_id=self.config.bos_token_id
                 )

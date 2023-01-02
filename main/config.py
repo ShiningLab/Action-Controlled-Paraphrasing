@@ -29,9 +29,9 @@ def init_args():
     parser.add_argument('--load_ckpt', type=str2bool, default=False)
     # ori_quora for original Quora Question Pair
     # sep_quora for newly separated Quora Question Pair
-    parser.add_argument('--task', type=str, default='sep_quora')
+    parser.add_argument('--task', type=str, default='ori_quora')
     # mask control
-    parser.add_argument('--mask', type=str2bool, default=True)
+    parser.add_argument('--mask', type=str2bool, default=False)
     # 0 for remove, 1 for keep, 2 for inference, 3 for padding
     parser.add_argument('--mask_size', type=int, default=4)
     parser.add_argument('--mask_delete_token_id', type=int, default=0)
@@ -46,35 +46,37 @@ def init_args():
         , default=['x_x_copy', 'y_x_switch', 'ld', 'lc']
         )
     parser.add_argument('--x_x_copy', type=str2bool, default=False)
-    parser.add_argument('--y_x_switch', type=str2bool, default=True)
-    parser.add_argument('--ld', type=str2bool, default=True)  # linear decompose
+    parser.add_argument('--y_x_switch', type=str2bool, default=False)
+    parser.add_argument('--ld', type=str2bool, default=False)  # linear decompose
     parser.add_argument('--lc', type=str2bool, default=False)  # linear compose
     parser.add_argument('--lc_low', type=int, default=2)  # linear compose
-    parser.add_argument('--lc_compo_size', type=int, default=512)  # linear compose
+    parser.add_argument('--lc_compo_size', type=int, default=8)  # linear compose
 
-    # bert-base-uncased
+    # pretrained language model
     parser.add_argument('--encoder', type=str, default='bert-base-uncased')
     parser.add_argument('--decoder', type=str, default='bert-base-uncased')
+    parser.add_argument('--scorer', type=str, default='deberta-large-mnli')
     # tfm for vanilla transformer
     parser.add_argument('--model', type=str, default='tfm')
     parser.add_argument('--hidden_size', type=int, default=450)
     parser.add_argument('--num_hidden_layers', type=int, default=3)
     parser.add_argument('--num_attention_heads', type=int, default=9)
     parser.add_argument('--intermediate_size', type=int, default=1024)
-    parser.add_argument('--en_max_len', type=int, default=47)
-    parser.add_argument('--de_max_len', type=int, default=47)
+    parser.add_argument('--en_max_len', type=int, default=20)
+    parser.add_argument('--de_max_len', type=int, default=20)
     # training
     parser.add_argument('--val', type=str2bool, default=True)
     parser.add_argument('--test', type=str2bool, default=True)
-    parser.add_argument('--train_batch_size', type=int, default=32)
+    parser.add_argument('--train_batch_size', type=int, default=64)
     parser.add_argument('--eval_batch_size', type=int, default=512)
     parser.add_argument('--num_workers', type=int, default=12)
     parser.add_argument('--learning_rate', type=float, default=5e-5)
     parser.add_argument('--max_grad_norm', type=float, default=1.0)
     parser.add_argument('--weight_decay', type=float, default=0.01)
     parser.add_argument('--warmup_steps', type=int, default=5000)
-    parser.add_argument('--max_steps', type=int, default=600000)   
+    parser.add_argument('--max_steps', type=int, default=200000)   
     # evaluation
+    parser.add_argument('--keymetric', type=str, default='loss')  # w.r.t. epoch
     parser.add_argument('--val_patience', type=int, default=32)  # w.r.t. epoch
     parser.add_argument('--eval_size', type=int, default=4000)  # for a fast training evaluation
     parser.add_argument('--num_beams', type=int, default=8)
@@ -105,6 +107,8 @@ class Config():
         os.makedirs(self.ENCODER_PATH, exist_ok=True)
         self.DECODER_PATH = os.path.join(self.LM_PATH, self.decoder)
         os.makedirs(self.DECODER_PATH, exist_ok=True)
+        self.SCORER_PATH = os.path.join(self.LM_PATH, self.scorer)
+        os.makedirs(self.SCORER_PATH, exist_ok=True)
         # checkpoints
         self.train_size, self.val_size, self.test_size = 310302, 4000, 20000
         self.CKPT_PATH = os.path.join(

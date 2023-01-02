@@ -32,12 +32,12 @@ class Paraphraser(object):
         # trainer
         self.trainer = helper.get_trainer(self.config)
         # tester
-        self.tester = helper.get_tester(self.trainer)
+        # self.tester = helper.get_tester(self.trainer)
 
 def main():
     pp = Paraphraser()
-    # pp.trainer.train()
-    pp.tester.test()
+    pp.trainer.train()
+    # pp.tester.test()
 
 if __name__ == '__main__':
       main()

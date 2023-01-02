@@ -37,8 +37,10 @@ class Dataset(Dataset):
 
     def __getitem__(self, idx):
         raw_x, raw_y = self.raw_xs[idx], self.raw_ys[idx]
+        # bos + text + eos
         x = self.xs_dict.input_ids[idx]
-        y = self.ys_dict.input_ids[idx]
+        # bos + text + eos -> text + eos
+        y = self.ys_dict.input_ids[idx][1:]
         # for mask control
         if self.config.mask:
             mask = self.masks[idx]
@@ -53,20 +55,25 @@ class Dataset(Dataset):
             , add_special_tokens=True
             , return_tensors='pt'
             , padding=True
+            , truncation=True
+            # bos + text + eos
+            , max_length=self.config.en_max_len + 2
          )
-        self.en_max_len = max(len(_) for _ in self.xs_dict.input_ids)
         self.ys_dict = self.tokenizer.batch_encode_plus(
             self.raw_ys
             , add_special_tokens=True
             , return_tensors='pt'
             , padding=True
+            , truncation=True
+            # bos + text + eos
+            , max_length=self.config.de_max_len + 2
          )
-        self.de_max_len = max(len(_) for _ in self.ys_dict.input_ids)
         # for mask control
         if self.config.mask:
             self.masks = []
             for x, y in zip(self.xs_dict.input_ids, self.ys_dict.input_ids):
                 shared_tokens = set(np.unique(x.numpy())) & set(np.unique(y.numpy()))
+                shared_tokens.discard(self.config.bos_token_id)
                 shared_tokens.discard(self.config.pad_token_id)
                 mask = sum([x == t for t in shared_tokens])
                 self.masks.append(mask)

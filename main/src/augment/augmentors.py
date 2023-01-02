@@ -6,12 +6,14 @@ __email__ = 'Email'
 
 # dependency
 # built-in
-import copy
+import os, copy
 # public
 import torch
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
-from transformers import AutoTokenizer, AutoModelForMaskedLM
+from transformers import AutoTokenizer
+from bert_score import BERTScorer
+from gramformer import Gramformer
 # private
 from src.augment import utils
 from src.augment.base import Base_Aug
@@ -105,16 +107,39 @@ class LinearCompose(Base_Aug):
     def __init__(self, config, **kwargs):
         super(LinearCompose, self).__init__(config)
         self.tokenizer = AutoTokenizer.from_pretrained(self.config.ENCODER_PATH)
-        self.encoder = AutoModelForMaskedLM.from_pretrained(
-            self.config.ENCODER_PATH
-            ).to(self.config.device)
-        self.encoder.eval()
-        self.cos = torch.nn.CosineSimilarity().to(self.config.device)
+        self.scorer = BERTScorer(
+            lang="en"
+            , model_type=self.config.SCORER_PATH
+            # https://github.com/Tiiiger/bert_score/blob/master/bert_score/utils.py#L119
+            , num_layers=18
+            , device=self.config.device
+            , batch_size=self.config.eval_batch_size
+            , nthreads=self.config.num_workers
+            , rescale_with_baseline=True
+            , baseline_path=os.path.join(self.config.SCORER_PATH, f'{self.config.scorer}.tsv')
+            )
+        self.corrector = Gramformer(
+            models=1
+            , use_gpu=config.device == 'cuda'
+            )
 
     def update_config(self, **kwargs):
         # update configuration accordingly
         for k,v in kwargs.items():
             setattr(self.config, k, v)
+
+    def preprocess(self, x: str) -> str:
+        x = self.tokenizer.encode(
+            x
+            , add_special_tokens=False
+            , truncation=True
+            , max_length=self.config.en_max_len
+            )
+        x = self.tokenizer.decode(
+            x
+            , skip_special_tokens=True
+            )
+        return x
 
     def do_aug(self, raw_xs_list, raw_ys_list):
         # linear decompose
@@ -140,26 +165,14 @@ class LinearCompose(Base_Aug):
                     aug_x = c_y + x[len(c_x):]
                 elif x.endswith(c_x):
                     aug_x = x[:len(x)-len(c_x)] + c_y
-                if aug_x and aug_x != x and aug_x != y:
-                    aug_xs.append(aug_x)
-                    # print('compo_x', c_x)
-                    # print('compo_y', c_y)
-                    # print(x)
-                    # print(y)
-                    # print(aug_x)
-                    if len(aug_xs) >= self.config.lc_compo_size:
-                        # print(len(aug_xs), compo_size)
-                        aug_xs = list(set(aug_xs))
-                        break
+                if aug_x:
+                    # aug_x = self.corrector.correct(aug_x, max_candidates=1).pop()
+                    if aug_x != x and aug_x != y and aug_x not in aug_xs:
+                        aug_xs.append(aug_x)
+                        if len(aug_xs) >= self.config.lc_compo_size:
+                            break
             aug_xs_list.append(aug_xs)
-            # if len(aug_xs_list) > 2:
-            #     break
-        # lm filter
-        # print(len(aug_xs_list))
-        # ls = [len(_) for _ in aug_xs_list]
-        # print(ls[:10])
-        # print(min(ls))
-        # print(max(ls))
+        # initialize dataset and dataloader
         dataset = CustomDataset(raw_xs_list, raw_ys_list, aug_xs_list)
         dataloader = DataLoader(
             dataset
@@ -169,58 +182,24 @@ class LinearCompose(Base_Aug):
             , pin_memory=self.config.pin_memory
             , drop_last=False
             )
+        # filer samples via corrector and scorer
         aug_xs_list, aug_ys_list = [], []
         for x, y, aug_xs in tqdm(dataloader):
+            base_f1 = self.scorer.score(x, y)[-1].item()
             if aug_xs:
-                # print(x)
-                # print(y)
-                # print(aug_xs[0])
-                # print(aug_xs[1])
-                # print(aug_xs[2])
-                # print(len(aug_xs))
-                # semantic representation
-                x_inputs = self.tokenizer.batch_encode_plus(
-                    x
-                    , add_special_tokens=True
-                    , return_tensors='pt'
-                    , padding='max_length'
-                    , max_length=64
-                    ).to(self.config.device)
-                y_inputs = self.tokenizer.batch_encode_plus(
-                    y
-                    , add_special_tokens=True
-                    , return_tensors='pt'
-                    , padding='max_length'
-                    , max_length=64
-                    ).to(self.config.device)
-                with torch.no_grad():
-                    x_logits = self.encoder(**x_inputs).logits.reshape(1, -1)
-                    y_logits = self.encoder(**y_inputs).logits.reshape(1, -1)
-                # get the cos of x and y
-                min_score = self.cos(x_logits, y_logits)
-                # semantic representation
-                aug_x_inputs = self.tokenizer.batch_encode_plus(
-                    aug_xs[0]
-                    , add_special_tokens=True
-                    , return_tensors='pt'
-                    , padding='max_length'
-                    , max_length=64
-                    ).to(self.config.device)
-                with torch.no_grad():
-                    aug_x_logits = self.encoder(**aug_x_inputs).logits.reshape(1, -1)
-                scores = self.cos(aug_x_logits, y_logits)
-                # filter out
-                for aug_x, s in zip(aug_xs[0], scores):
-                    if s > min_score:
+                # list of list of string
+                xs_f1 = self.scorer.score(x*len(aug_xs), aug_xs)[-1]
+                ys_f1 = self.scorer.score(y*len(aug_xs), aug_xs)[-1]
+                for aug_x, x_f1, y_f1 in zip(aug_xs, xs_f1, ys_f1):
+                    aug_x, x_f1, y_f1 = aug_x[0], x_f1.item(), y_f1.item()
+                    f1 = (x_f1 + y_f1) / 2
+                    if f1 >= base_f1:
+                        aug_x = self.preprocess(aug_x)
                         aug_xs_list.append(aug_x)
                         aug_ys_list += y
-                        # print(x)
-                        # print(y)
-                        # print(s)
-                        # print(aug_x)
         xs_list = raw_xs_list + aug_xs_list
         ys_list = raw_ys_list + aug_ys_list
-        # remove duplicates
+        # remove duplicates caused by corrector
         # print(len(xs_list), len(raw_xs_list), len(aug_xs_list))
         xs_list, ys_list = utils.remove_duplicates(xs_list, ys_list)
         # print(len(xs_list))
@@ -232,10 +211,14 @@ class General_Aug(Base_Aug):
     def __init__(self, config, **kwargs):
         super(General_Aug, self).__init__(config)
         self.update_config(**kwargs)
-        self.xxcopy = XXCopy(config)
-        self.yxswitch = YXSwitch(config)
-        self.ld = LinearDecompose(config)
-        self.lc = LinearCompose(config)
+        if self.config.x_x_copy:
+            self.xxcopy = XXCopy(config)
+        if self.config.y_x_switch:
+            self.yxswitch = YXSwitch(config)
+        if self.config.ld:
+            self.ld = LinearDecompose(config)
+        if self.config.lc:
+            self.lc = LinearCompose(config)
 
     def update_config(self, **kwargs):
         # update configuration accordingly

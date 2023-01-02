@@ -46,7 +46,7 @@ class Base_Trainer(object):
             self.log_dict[mode]['eval'] = []
             self.log_dict[mode]['best_eval'] = []
         self.log_dict['start_time'] = datetime.datetime.now()
-        self.log_dict['best_val_metric'] = 0.
+        self.log_dict['best_val_metric'] = float('inf')
 
     def setup_results_dict(self):
         self.results_dict = {}

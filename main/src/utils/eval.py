@@ -76,7 +76,7 @@ class Metrics:
 
 class Evaluater(object):
     """docstring for Evaluater"""
-    def __init__(self, xs, ys, ys_, config, loss=float('inf'), sample=True):
+    def __init__(self, xs, ys, ys_, config, loss, sample=True):
         super(Evaluater, self).__init__()
         self.Metrics = Metrics()
         self.config = config
@@ -117,7 +117,7 @@ class Evaluater(object):
         self.results['rouge1'] = float(np.mean(rouge1_list))
         self.results['rouge2'] = float(np.mean(rouge2_list))
         self.results['rougeL'] = float(np.mean(rougeL_list))
-        self.results['keymetric'] = self.results['ibleu']
+        self.results['keymetric'] = self.results[self.config.keymetric]
         # evaluation info
         self.info = ''
         for k, v in self.results.items():
