@@ -10,36 +10,47 @@ This repository is for the project Mask Controlled Paraphrase Generation.
 ```
 Mask-Controlled-Paraphrase-Generation
 ├── README.md
-└── main
-    ├── config.py
-    ├── main.py
-    ├── res
-    │   ├── data
-    │   ├── lm
-    │   └── log
-    ├── script
-    │   └── quora
-    │       ├── baai.sh
-    │       └── narval.sh
-    ├── src
-    │   ├── augment
-    │   │   ├── augmentors.py
-    │   │   ├── base.py
-    │   │   └── utils.py
-    │   ├── datasets
-    │   │   └── quora.py
-    │   ├── models
-    │   │   ├── encoder.py
-    │   │   ├── lm.py
-    │   │   └── tfm.py
-    │   ├── trainers
-    │   │   ├── base.py
-    │   │   └── seq2seq.py
-    │   └── utils
-    │       ├── eval.py
-    │       ├── helper.py
-    │       └── preprocess.py
-    └── requirements.txt
+├── main
+│   ├── config.py
+│   ├── main.py
+│   ├── res
+│   │   ├── ckpts
+│   │   ├── data
+│   │   │   ├── ori_quora.pkl
+│   │   │   └── sep_quora.pkl
+│   │   ├── lm
+│   │   │   ├── bert-base-uncased
+│   │   │   ├── deberta-large-mnli
+│   │   │   ├── opus-mt-ROMANCE-en
+│   │   │   └── opus-mt-en-ROMANCE
+│   │   ├── log
+│   │   └── results
+│   ├── script
+│   │   └── quora
+│   │       ├── baai.sh
+│   │       └── narval.sh
+│   └── src
+│         ├── augment
+│         │   ├── augmentors.py
+│         │   ├── base.py
+│         │   └── utils.py
+│         ├── datasets
+│         │   └── quora.py
+│         ├── models
+│         │   ├── encoder.py
+│         │   ├── lm.py
+│         │   └── tfm.py
+│         ├── testers
+│         │   ├── base.py
+│         │   └── seq2seq.py
+│         ├── trainers
+│         │   ├── base.py
+│         │   └── seq2seq.py
+│         └── utils
+│             ├── eval.py
+│             ├── helper.py
+│             └── preprocess.py
+└── requirements.txt
 ```
 
 ## Dependencies

@@ -1,11 +1,14 @@
 # self defined
 *.ipynb
+*.json
 *.txt
 *.pkl
+*.zip
+*.pt
 lm/
-log/
-data/
-ckpts/
+raw/
+
+archive/
 .DS_Store
 
 # Byte-compiled / optimized / DLL files
