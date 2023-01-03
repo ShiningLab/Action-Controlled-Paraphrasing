@@ -64,8 +64,7 @@ Mask-Controlled-Paraphrase-Generation
 ## Setup
 Please ensure required packages are already installed. A virtual environment is recommended.
 ```
-$ cd Text-Editing-AS-Imitation-Game
-$ cd main
+$ cd Mask-Controlled-Paraphrase-Generation
 $ pip install pip --upgrade
 $ pip install -r requirements.txt
 $ python
@@ -74,8 +73,18 @@ $ python
 ……nltk.download('punkt')
 ……nltk.download('wordnet')
 ……exit()
-$ cd res/lm
+$ cd main
+$ mkdir res
+$ cd res
+$ mkdir lm
+$ cd lm
 $ git clone https://huggingface.co/bert-base-uncased
+$ git clone https://huggingface.co/microsoft/deberta-large-mnli
+$ mv -r microsoft/deberta-large-mnli deberta-large-mnli
+$ git clone https://huggingface.co/Helsinki-NLP/opus-mt-en-ROMANCE
+$ git clone https://huggingface.co/Helsinki-NLP/opus-mt-ROMANCE-en
+$ cd ../..
+$ python main.py
 ```
 
 ## Authors
