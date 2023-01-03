@@ -11,7 +11,7 @@ import os, copy
 import torch
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, MarianMTModel, MarianTokenizer
 from bert_score import BERTScorer
 from gramformer import Gramformer
 # private
@@ -205,6 +205,106 @@ class LinearCompose(Base_Aug):
         # print(len(xs_list))
         return xs_list, ys_list
 
+class BTDataset(Dataset):
+    """docstring for BTDataset"""
+    def __init__(self, xs, ys):
+        super(BTDataset, self).__init__()
+        self.xs = xs
+        self.ys = ys
+        self.data_size = len(self.xs)
+
+    def __len__(self): 
+        return self.data_size
+
+    def __getitem__(self, idx):
+        return self.xs[idx], self.ys[idx]
+
+class BackTranslate(Base_Aug):
+    """docstring for BackTranslate"""
+    def __init__(self, config, **kwargs):
+        super(BackTranslate, self).__init__(config)
+        self.src_tokenizer = MarianTokenizer.from_pretrained(
+            self.config.SOURCE_TRANSLATOR_PATH
+            )
+        self.src_translator = MarianMTModel.from_pretrained(
+            self.config.SOURCE_TRANSLATOR_PATH
+            ).to(self.config.device)
+        self.src_translator.eval()
+        self.tgt_tokenizer = MarianTokenizer.from_pretrained(
+            self.config.TARGET_TRANSLATOR_PATH
+            )
+        self.tgt_translator = MarianMTModel.from_pretrained(
+            self.config.TARGET_TRANSLATOR_PATH
+            ).to(self.config.device)
+        self.tgt_translator.eval()
+
+    def update_config(self, **kwargs):
+        # update configuration accordingly
+        for k,v in kwargs.items():
+            setattr(self.config, k, v)
+
+    def translate(self, texts, model, tokenizer, language):
+        """
+        adapted from https://amitness.com/back-translation/
+        """
+        # prepare the text data into appropriate format for the model
+        template = lambda text: f"{text}" if language == "en" else f">>{language}<< {text}"
+        inputs = [template(text) for text in texts]
+        # tokenize the texts
+        inputs = tokenizer.batch_encode_plus(
+            inputs
+            , return_tensors='pt'
+            , padding=True
+            ).to(self.config.device)
+        # generate translation using model
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs
+                , max_new_tokens=model.config.max_length
+                ).cpu().detach()
+        # convert the generated tokens indices back into text
+        outputs = tokenizer.batch_decode(
+            outputs
+            , skip_special_tokens=True
+            )
+        return outputs
+
+    def do_aug(self, raw_xs_list, raw_ys_list):
+        # initialize dataset and dataloader
+        dataset = BTDataset(raw_xs_list, raw_ys_list)
+        dataloader = DataLoader(
+            dataset
+            , batch_size=self.config.train_batch_size
+            , shuffle=False
+            , num_workers=self.config.num_workers
+            , pin_memory=self.config.pin_memory
+            , drop_last=False
+            )
+        # batch back translation
+        aug_xs_list, aug_ys_list = [], []
+        for raw_xs, raw_ys in tqdm(dataloader):
+            # translate from source to target language
+            tgt_texts = self.translate(
+                texts=raw_xs
+                , model=self.tgt_translator
+                , tokenizer=self.tgt_tokenizer
+                , language=self.config.bt_tgt_lang
+                )
+            # translate from target language back to source language
+            src_texts = self.translate(
+                texts=tgt_texts
+                , model=self.src_translator
+                , tokenizer=self.src_tokenizer
+                , language=self.config.bt_src_lang
+                )
+            aug_xs_list += src_texts
+            aug_ys_list += raw_ys
+        xs_list = raw_xs_list + aug_xs_list
+        ys_list = raw_ys_list + aug_ys_list
+        # remove duplicates
+        xs_list, ys_list = utils.remove_duplicates(xs_list, ys_list)
+        return xs_list, ys_list
+
 
 class General_Aug(Base_Aug):
     """docstring for General_Aug"""
@@ -219,6 +319,8 @@ class General_Aug(Base_Aug):
             self.ld = LinearDecompose(config)
         if self.config.lc:
             self.lc = LinearCompose(config)
+        if self.config.bt:
+            self.bt = BackTranslate(config)
 
     def update_config(self, **kwargs):
         # update configuration accordingly
@@ -234,22 +336,25 @@ class General_Aug(Base_Aug):
             print(f'\t{aug}: {self.config.__dict__[aug]}')
         match self.augs:
             # none
-            case (False, False, False, False):
+            case (False, False, False, False, False):
                 return raw_xs_list, raw_ys_list
             # x_x_copy
-            case (True, False, False, False):
+            case (True, False, False, False, False):
                 return self.xxcopy.do_aug(raw_xs_list, raw_ys_list)
             # y_x_switch
-            case (False, True, False, False):
+            case (False, True, False, False, False):
                 return self.yxswitch.do_aug(raw_xs_list, raw_ys_list)
             # linear decompose
-            case (False, False, True, False):
+            case (False, False, True, False, False):
                 return self.ld.do_aug(raw_xs_list, raw_ys_list)
             # linear compose
-            case (False, False, False, True):
+            case (False, False, False, True, False):
                 return self.lc.do_aug(raw_xs_list, raw_ys_list)
+            # back translate
+            case (False, False, False, False, True):
+                return self.bt.do_aug(raw_xs_list, raw_ys_list)
             # y_x_switch + linear decompose
-            case (False, True, True, False):
+            case (False, True, True, False, True):
                 xs_list, ys_list = self.yxswitch.do_aug(raw_xs_list, raw_ys_list)
                 xs_list, ys_list = self.ld.do_aug(xs_list, ys_list)
                 xs_list, ys_list = self.yxswitch.do_aug(xs_list, ys_list)

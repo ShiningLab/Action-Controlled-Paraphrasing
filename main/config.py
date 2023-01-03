@@ -31,7 +31,7 @@ def init_args():
     # sep_quora for newly separated Quora Question Pair
     parser.add_argument('--task', type=str, default='sep_quora')
     # mask control
-    parser.add_argument('--mask', type=str2bool, default=False)
+    parser.add_argument('--mask', type=str2bool, default=True)
     # 0 for remove, 1 for keep, 2 for inference, 3 for padding
     parser.add_argument('--mask_size', type=int, default=4)
     parser.add_argument('--mask_delete_token_id', type=int, default=0)
@@ -43,19 +43,23 @@ def init_args():
     parser.add_argument(
         '--augs'
         , type=list
-        , default=['x_x_copy', 'y_x_switch', 'ld', 'lc']
+        , default=['x_x_copy', 'y_x_switch', 'ld', 'lc', 'bt']
         )
     parser.add_argument('--x_x_copy', type=str2bool, default=False)
     parser.add_argument('--y_x_switch', type=str2bool, default=False)
     parser.add_argument('--ld', type=str2bool, default=False)  # linear decompose
     parser.add_argument('--lc', type=str2bool, default=False)  # linear compose
-    parser.add_argument('--lc_low', type=int, default=2)  # linear compose
-    parser.add_argument('--lc_compo_size', type=int, default=8)  # linear compose
+    parser.add_argument('--bt', type=str2bool, default=True)  # back translate
+    parser.add_argument('--lc_low', type=int, default=2)
+    parser.add_argument('--lc_compo_size', type=int, default=8)
+    parser.add_argument('--bt_src_lang', type=str, default='en') 
+    parser.add_argument('--bt_tgt_lang', type=str, default='fr') 
     # pretrained language model
     parser.add_argument('--encoder', type=str, default='bert-base-uncased')
     parser.add_argument('--decoder', type=str, default='bert-base-uncased')
     parser.add_argument('--scorer', type=str, default='deberta-large-mnli')
-    parser.add_argument('--translator', type=str, default='t5-base')
+    parser.add_argument('--src_translator', type=str, default='opus-mt-ROMANCE-en')
+    parser.add_argument('--tgt_translator', type=str, default='opus-mt-en-ROMANCE')
     # tfm for vanilla transformer
     parser.add_argument('--model', type=str, default='tfm')
     parser.add_argument('--hidden_size', type=int, default=450)
@@ -110,8 +114,10 @@ class Config():
         os.makedirs(self.DECODER_PATH, exist_ok=True)
         self.SCORER_PATH = os.path.join(self.LM_PATH, self.scorer)
         os.makedirs(self.SCORER_PATH, exist_ok=True)
-        self.TRANSLATOR_PATH = os.path.join(self.LM_PATH, self.translator)
-        os.makedirs(self.TRANSLATOR_PATH, exist_ok=True)
+        self.SOURCE_TRANSLATOR_PATH = os.path.join(self.LM_PATH, self.src_translator)
+        os.makedirs(self.SOURCE_TRANSLATOR_PATH, exist_ok=True)
+        self.TARGET_TRANSLATOR_PATH = os.path.join(self.LM_PATH, self.tgt_translator)
+        os.makedirs(self.TARGET_TRANSLATOR_PATH, exist_ok=True)
         # checkpoints
         self.train_size, self.val_size, self.test_size = 310302, 4000, 20000
         self.CKPT_PATH = os.path.join(

@@ -136,7 +136,7 @@ class Trainer(Base_Trainer):
                 self.config.test_size = len(dataset)
         # update config
         self.config.train_size = len(train_dataset)
-        self.config.max_steps = int(256*(self.config.train_size/self.config.train_batch_size))
+        self.config.max_steps = int(128*(self.config.train_size/self.config.train_batch_size))
         # get scheduler
         self.scheduler = get_linear_schedule_with_warmup(
             optimizer=self.optimizer
