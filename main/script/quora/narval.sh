@@ -9,11 +9,11 @@
 #SBATCH -J shining  # job name
 #SBATCH --mail-type=ALL  # email notification for certain types of events
 #SBATCH --mail-user=ning.shi@ualberta.ca  # email address for notification
-#SBATCH -e sep_quora_mask_0.error  # error log
-#SBATCH -o sep_quora_mask_0.out  # output log
+#SBATCH -e ori_quora_mask_0.error  # error log
+#SBATCH -o ori_quora_mask_0.out  # output log
 
 MODEL=$(echo 'tfm')  # tfm
-TASK=$(echo 'sep_quora')  # ori_quora, sep_quora
+TASK=$(echo 'ori_quora')  # ori_quora, sep_quora
 SEED=$(echo '0')  # 0, 1, 2, 3, 4
 MASK=$(echo 'True') 
 
@@ -49,8 +49,7 @@ python main.py \
     --max_grad_norm=1.0 \
     --weight_decay=0.01 \
     --warmup_steps=5000 \
-    --max_steps=200000 \
-    --keymetric=loss \
+    --keymetric=ibleu0.8 \
     --val_patience=32 \
     --eval_size=4000 \
     --num_beams=8

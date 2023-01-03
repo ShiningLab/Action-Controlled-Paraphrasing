@@ -24,7 +24,7 @@ class Base_Trainer(object):
     def __update_config(self):
         # global configurations always not changed
         self.config.shuffle = True  # to shuffle the training set
-        self.config.pin_memory = True  # pin memory for data loader
+        self.config.pin_memory = True  # pin memory for dataloader
         self.config.drop_last = True  # drop the last training batch
 
     def __initialize(self):
@@ -46,7 +46,8 @@ class Base_Trainer(object):
             self.log_dict[mode]['eval'] = []
             self.log_dict[mode]['best_eval'] = []
         self.log_dict['start_time'] = datetime.datetime.now()
-        self.log_dict['best_val_metric'] = float('inf')
+        self.log_dict['best_val_metric'] = 0.
+        # self.log_dict['best_val_metric'] = float('inf')
 
     def setup_results_dict(self):
         self.results_dict = {}
@@ -60,7 +61,7 @@ class Base_Trainer(object):
         checkpoint_to_save = {
         'step': self.step
         , 'epoch': self.epoch
-        # , 'val_epoch': self.val_epoch
+        , 'val_epoch': self.val_epoch
         , 'log_dict': self.log_dict
         , 'model': self.model.state_dict()
         , 'optimizer': self.optimizer.state_dict()
@@ -73,7 +74,7 @@ class Base_Trainer(object):
         ckpt_to_load =  torch.load(self.config.CKPT_PT, map_location=self.config.device) 
         self.step = ckpt_to_load['step']
         self.epoch = ckpt_to_load['epoch']
-        # self.val_epoch  = ckpt_to_load['val_epoch']
+        self.val_epoch  = ckpt_to_load['val_epoch']
         self.log_dict = ckpt_to_load['log_dict']
         self.model.load_state_dict(ckpt_to_load['model'])
         self.optimizer.load_state_dict(ckpt_to_load['optimizer'])

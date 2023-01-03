@@ -8,7 +8,7 @@ __email__ = 'Email'
 # public
 import torch
 from torch.utils import data as torch_data
-import tqdm
+from tqdm import tqdm
 # private
 from src.utils import helper
 from src.utils.eval import Evaluater
@@ -71,7 +71,7 @@ class Tester(Base_Tester):
         # initialization
         epoch_xs, epoch_ys, epoch_ys_ = [], [], []
         # for batch in epoch
-        for (raw_xs, raw_ys), inputs_dict in tqdm.tqdm(self.dataloader):
+        for (raw_xs, raw_ys), inputs_dict in tqdm(self.dataloader):
             inputs_dict = {k: v.to(self.config.device) for k, v in inputs_dict.items() if v is not None}
             ys_ = self.model.generate(**inputs_dict)  # batch_size, de_max_len
             # post processing

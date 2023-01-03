@@ -87,18 +87,22 @@ class Evaluater(object):
         self.tk_xs = [word_tokenize(x) for x in xs[:eval_size]]
         self.tk_ys = [word_tokenize(y) for y in ys[:eval_size]]
         self.tk_ys_ = [word_tokenize(y_) for y_ in ys_[:eval_size]]
-        self.ibleu_alpha = 0.8
+        self.alphas = [0.9, 0.8, 0.7]
         self.get_eval()
 
     def get_eval(self):
-        ibleu_list, bleu2_list, bleu3_list, bleu4_list= [], [], [], []
+        ibleu9_list, ibleu8_list, ibleu7_list = [], [], []
+        bleu2_list, bleu3_list, bleu4_list= [], [], []
         meteor_list, rouge1_list, rouge2_list, rougeL_list = [], [], [], []
         for y, y_, tk_x, tk_y, tk_y_ in zip(self.ys, self.ys_, self.tk_xs, self.tk_ys, self.tk_ys_):
             bleu2, bleu3, bleu4 = self.get_bleu(tk_y, tk_y_)
-            ibleu = self.get_ibleu(tk_x, tk_y_, bleu4)
+            # alphas = [0.9, 0.8, 0.7]
+            ibleu9, ibleu8, ibleu7 = self.get_ibleu(tk_x, tk_y_, bleu4)
             meteor = self.get_meteor(tk_y, tk_y_)
             rouge1, rouge2, rougeL = self.get_rouge_scores(y, y_)
-            ibleu_list.append(ibleu)
+            ibleu9_list.append(ibleu9)
+            ibleu8_list.append(ibleu8)
+            ibleu7_list.append(ibleu7)
             bleu2_list.append(bleu2)
             bleu3_list.append(bleu3)
             bleu4_list.append(bleu4)
@@ -109,7 +113,9 @@ class Evaluater(object):
         self.results = {}
         self.results['loss'] = self.loss
         self.results['perplexity'] = self.get_perplexity() if self.loss < float('inf') else float('inf')
-        self.results['ibleu'] = float(np.mean(ibleu_list))
+        self.results['ibleu0.9'] = float(np.mean(ibleu9_list))
+        self.results['ibleu0.8'] = float(np.mean(ibleu8_list))
+        self.results['ibleu0.7'] = float(np.mean(ibleu7_list))
         self.results['bleu2'] = float(np.mean(bleu2_list))
         self.results['bleu3'] = float(np.mean(bleu3_list))
         self.results['bleu4'] = float(np.mean(bleu4_list))
@@ -131,11 +137,14 @@ class Evaluater(object):
 
     def get_ibleu(self, tk_x, tk_y_, bleu4):
         if bleu4:
-            self_bleu = self.Metrics.sim_bleu4(tk_x, tk_y_)
-            ibleu = bleu4*self.ibleu_alpha - (1-self.ibleu_alpha)*self_bleu
-        else:
-            ibleu = 0.0
-        return ibleu
+            sbleu = self.Metrics.sim_bleu4(tk_x, tk_y_)
+            ibleus = []
+            for alpha in self.alphas:
+                # https://aclanthology.org/P12-2008/
+                ibleu = alpha * bleu4 - (1 - alpha) * sbleu
+                ibleus.append(ibleu)
+            return ibleus
+        return 0., 0., 0.
 
     def get_meteor(self, tk_y, tk_y_):
         return self.Metrics.sim_meteor(tk_y, tk_y_) if tk_y_ else 0.

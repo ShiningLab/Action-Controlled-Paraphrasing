@@ -129,4 +129,9 @@ def pad_masks(xs, masks, config):
     for i in range(pad_masks.shape[0]):
         pad_idx = (xs[i] != config.pad_token_id).sum().item()
         pad_masks[i][:pad_idx] = masks[i][:pad_idx]
+        # the first token is always 0 to delete bos
+        pad_masks[i][0] = config.mask_delete_token_id
     return pad_masks
+
+def unify_white_space(x: str) -> str:
+    return ' '.join(x.split())

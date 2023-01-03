@@ -69,16 +69,6 @@ class Trainer(Base_Trainer):
         # optimizer
         optim_params = helper.get_optim_params(self.model, self.config)
         self.optimizer = torch.optim.AdamW(optim_params, lr=self.config.learning_rate)
-        # scheduler
-        self.scheduler = get_linear_schedule_with_warmup(
-            optimizer=self.optimizer
-            , num_warmup_steps=self.config.warmup_steps
-            , num_training_steps=self.config.max_steps
-            )
-        # restore the trainer from the checkpint if needed
-        if self.config.load_ckpt:
-            self.load_ckpt()
-            logger.info('Trainer restored from {}.'.format(self.config.CKPT_PT))
         # save config
         self.log_dict['config'] = self.config.__dict__
 
@@ -93,21 +83,25 @@ class Trainer(Base_Trainer):
             # mask padding
             masks = torch.stack(masks)
             masks = helper.pad_masks(xs, masks, self.config)
-            if self.mode in ['train', 'val']:
+            # if self.mode in ['train', 'val']:
+            if self.model.training:
                 inputs_dict = {'xs': xs, 'ys': ys, 'masks': masks}
-            elif self.mode in ['test']:
-                inputs_dict = {'xs': xs, 'masks': masks}
+            # elif self.mode in ['test']:
             else:
-                raise NotImplementedError
+                inputs_dict = {'xs': xs, 'masks': masks}
+            # else:
+                # raise NotImplementedError
         else:
             raw_xs, raw_ys, xs, ys = map(list, zip(*data))
             xs, ys = torch.stack(xs), torch.stack(ys)
-            if self.mode in ['train', 'val']:
+            # if self.mode in ['train', 'val']:
+            if self.model.training:
                 inputs_dict = {'xs': xs, 'ys': ys}
-            elif self.mode in ['test']:
-                inputs_dict = {'xs': xs}
+            # elif self.mode in ['test']:
             else:
-                raise NotImplementedError
+                inputs_dict = {'xs': xs}
+            # else:
+                # raise NotImplementedError
         return (raw_xs, raw_ys), inputs_dict
 
     def setup_dataloader(self):
@@ -142,6 +136,13 @@ class Trainer(Base_Trainer):
                 self.config.test_size = len(dataset)
         # update config
         self.config.train_size = len(train_dataset)
+        self.config.max_steps = int(256*(self.config.train_size/self.config.train_batch_size))
+        # get scheduler
+        self.scheduler = get_linear_schedule_with_warmup(
+            optimizer=self.optimizer
+            , num_warmup_steps=self.config.warmup_steps
+            , num_training_steps=self.config.max_steps
+            )
         # to save checkpoint
         self.config.CKPT_PT = f'{self.config.train_size}_{self.config.val_size}_{self.config.test_size}.pt'
         self.config.CKPT_PT = os.path.join(self.config.CKPT_PATH, self.config.CKPT_PT)
@@ -190,23 +191,23 @@ class Trainer(Base_Trainer):
                     epoch_ys_ += ys_
                     # break
             return epoch_loss / epoch_steps, epoch_xs, epoch_ys, epoch_ys_
-        elif mode == 'val':
-            epoch_loss, epoch_steps = 0., 0
-            for (raw_xs, raw_ys), inputs_dict in dataloader:
-                # move to device
-                inputs_dict = {k: v.to(self.config.device) for k, v in inputs_dict.items() if v is not None}
-                # model feedward
-                ys_, loss = self.model(**inputs_dict)
-                # post processing
-                ys_ = torch.argmax(ys_, dim=-1).cpu().detach()
-                ys_ = self.tokenizer.batch_decode(ys_, skip_special_tokens=True)
-                epoch_loss += loss.item()
-                epoch_steps += 1
-                epoch_xs += raw_xs
-                epoch_ys += raw_ys
-                epoch_ys_ += ys_
-                # break
-            return epoch_loss / epoch_steps, epoch_xs, epoch_ys, epoch_ys_
+        # elif mode == 'val':
+        #     epoch_loss, epoch_steps = 0., 0
+        #     for (raw_xs, raw_ys), inputs_dict in dataloader:
+        #         # move to device
+        #         inputs_dict = {k: v.to(self.config.device) for k, v in inputs_dict.items() if v is not None}
+        #         # model feedward
+        #         ys_, loss = self.model(**inputs_dict)
+        #         # post processing
+        #         ys_ = torch.argmax(ys_, dim=-1).cpu().detach()
+        #         ys_ = self.tokenizer.batch_decode(ys_, skip_special_tokens=True)
+        #         epoch_loss += loss.item()
+        #         epoch_steps += 1
+        #         epoch_xs += raw_xs
+        #         epoch_ys += raw_ys
+        #         epoch_ys_ += ys_
+        #         # break
+        #     return epoch_loss / epoch_steps, epoch_xs, epoch_ys, epoch_ys_
         else:
             for (raw_xs, raw_ys), inputs_dict in dataloader:
                 # move to device
@@ -224,6 +225,10 @@ class Trainer(Base_Trainer):
     def train(self):
         # get dataloader
         self.setup_dataloader()
+        # restore the trainer from the checkpint if needed
+        if self.config.load_ckpt:
+            self.load_ckpt()
+            logger.info('Trainer restored from {}.'.format(self.config.CKPT_PT))
         # show configurations
         logger.info('*Configurations:*')
         for k, v in self.config.__dict__.items():
@@ -276,9 +281,9 @@ class Trainer(Base_Trainer):
 
     def early_stopping(self):
         # check if early stop based on the validation
-        if self.log_dict['val']['eval'][-1][-1]['keymetric'] < self.log_dict['best_val_metric']:
+        if self.log_dict['val']['eval'][-1][-1]['keymetric'] > self.log_dict['best_val_metric']:
             logger.info(
-                'Got the best validation so far! ({} < {})'.format(
+                'Got the best validation so far! ({} > {})'.format(
                     self.log_dict['val']['eval'][-1][-1]['keymetric']
                     , self.log_dict['best_val_metric']
                     )
