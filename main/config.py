@@ -29,7 +29,8 @@ def init_args():
     parser.add_argument('--load_ckpt', type=str2bool, default=False)
     # ori_quora for original Quora Question Pair
     # sep_quora for newly separated Quora Question Pair
-    parser.add_argument('--task', type=str, default='sep_quora')
+    # twitterurl for original Twitter URL Paraphrasing
+    parser.add_argument('--task', type=str, default='twitterurl')
     # mask control
     parser.add_argument('--mask', type=str2bool, default=True)
     # 0 for remove, 1 for keep, 2 for inference, 3 for padding
@@ -38,7 +39,8 @@ def init_args():
     parser.add_argument('--mask_keep_token_id', type=int, default=1)
     parser.add_argument('--mask_infer_token_id', type=int, default=2)
     parser.add_argument('--mask_pad_token_id', type=int, default=3)
-    parser.add_argument('--mask_weights', type=list, default=[0.8, 0.1, 0.1])
+    # keep, random, infer
+    parser.add_argument('--mask_weights', nargs='+', type=float, default=[0.8, 0.1, 0.1])
     # data augmentation
     parser.add_argument(
         '--augs'
@@ -49,7 +51,7 @@ def init_args():
     parser.add_argument('--y_x_switch', type=str2bool, default=False)
     parser.add_argument('--ld', type=str2bool, default=False)  # linear decompose
     parser.add_argument('--lc', type=str2bool, default=False)  # linear compose
-    parser.add_argument('--bt', type=str2bool, default=True)  # back translate
+    parser.add_argument('--bt', type=str2bool, default=False)  # back translate
     parser.add_argument('--lc_low', type=int, default=2)
     parser.add_argument('--lc_compo_size', type=int, default=8)
     parser.add_argument('--bt_src_lang', type=str, default='en') 

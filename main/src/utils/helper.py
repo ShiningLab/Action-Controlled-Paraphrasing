@@ -15,7 +15,6 @@ import torch
 from src.models import tfm
 from src.trainers import seq2seq as seq2seq_trainer
 from src.testers import seq2seq as seq2seq_tester
-from src.datasets import quora
 
 
 def save_pickle(path, obj):
@@ -70,14 +69,6 @@ def get_trainer(config):
 
 def get_tester(trainer):
     return seq2seq_tester.Tester(trainer)
-
-def get_dataset(config):
-    match config.task:
-        case 'ori_quora':
-            return quora.Dataset
-        case 'sep_quora':
-            return quora.Dataset
-    raise NotImplementedError
 
 def get_optim_params(model, config):
     no_decay = ['bias', 'LayerNorm.weight']

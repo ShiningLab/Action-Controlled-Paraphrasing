@@ -11,10 +11,10 @@ import datetime
 import torch
 
 
-class Base_Trainer(object):
-    """docstring for Base_Trainer"""
+class BaseTrainer(object):
+    """docstring for BaseTrainer"""
     def __init__(self, config):
-        super(Base_Trainer, self).__init__()
+        super(BaseTrainer, self).__init__()
         self.config = config
         self.__update_config()
         self.__initialize()

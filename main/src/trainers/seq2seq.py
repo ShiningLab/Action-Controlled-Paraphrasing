@@ -16,8 +16,10 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 # private
 from src.utils import helper
 from src.utils.eval import Evaluater
-from src.trainers.base import Base_Trainer
+from src.datasets.base import Dataset
+from src.trainers.base import BaseTrainer
 from src.augment.augmentors import General_Aug
+
 
 
 # helper function
@@ -38,7 +40,7 @@ def init_logger(config):
     return logger
 
 
-class Trainer(Base_Trainer):
+class Trainer(BaseTrainer):
     """docstring for Trainer"""
     def __init__(self, config, **kwargs):
         super(Trainer, self).__init__(config)
@@ -61,8 +63,6 @@ class Trainer(Base_Trainer):
             os.environ["TOKENIZERS_PARALLELISM"] = "true"
         # augmenator
         self.augmenator = General_Aug(self.config)
-        # dataset class
-        self.Dataset = helper.get_dataset(self.config)
         # model graph
         self.model = helper.get_model(self.config).to(self.config.device)
         self.config.num_parameters = f'{sum(p.numel() for p in self.model.parameters() if p.requires_grad):,}'
@@ -105,7 +105,7 @@ class Trainer(Base_Trainer):
         return (raw_xs, raw_ys), inputs_dict
 
     def setup_dataloader(self):
-        train_dataset = self.Dataset('train', self.tokenizer, self.config, self.augmenator)
+        train_dataset = Dataset('train', self.tokenizer, self.config, self.augmenator)
         train_dataloader = torch_data.DataLoader(
             train_dataset
             , batch_size=self.config.train_batch_size
@@ -118,7 +118,7 @@ class Trainer(Base_Trainer):
         self.dataloader_dict['train'] = train_dataloader
         # update config
         for mode in self.config.eva_modes:
-            dataset = self.Dataset(mode, self.tokenizer, self.config)
+            dataset = Dataset(mode, self.tokenizer, self.config)
             dataloader = torch_data.DataLoader(
                 dataset
                 , batch_size=self.config.eval_batch_size

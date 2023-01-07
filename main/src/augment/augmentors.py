@@ -332,8 +332,8 @@ class General_Aug(Base_Aug):
             raw_xs_list, raw_ys_list = copy.deepcopy(raw_xs_list), copy.deepcopy(raw_ys_list)
         # augmentation
         print('Apply augmentation as follow:')
-        for aug in self.config.augs:
-            print(f'\t{aug}: {self.config.__dict__[aug]}')
+        for aug, v in zip(self.config.augs, self.augs):
+            print(f'\t{aug}: {v}')
         match self.augs:
             # none
             case (False, False, False, False, False):
@@ -354,9 +354,20 @@ class General_Aug(Base_Aug):
             case (False, False, False, False, True):
                 return self.bt.do_aug(raw_xs_list, raw_ys_list)
             # y_x_switch + linear decompose
-            case (False, True, True, False, True):
+            case (False, True, True, False, False):
                 xs_list, ys_list = self.yxswitch.do_aug(raw_xs_list, raw_ys_list)
                 xs_list, ys_list = self.ld.do_aug(xs_list, ys_list)
                 xs_list, ys_list = self.yxswitch.do_aug(xs_list, ys_list)
+                return xs_list, ys_list
+            # y_x_switch + back translate
+            case (False, True, False, False, True):
+                xs_list, ys_list = self.yxswitch.do_aug(raw_xs_list, raw_ys_list)
+                xs_list, ys_list = self.bt.do_aug(xs_list, ys_list)
+                xs_list, ys_list = self.yxswitch.do_aug(xs_list, ys_list)
+                return xs_list, ys_list
+            # linear decompose + back translate
+            case (False, False, True, False, True):
+                xs_list, ys_list = self.bt.do_aug(raw_xs_list, raw_ys_list)
+                xs_list, ys_list = self.ld.do_aug(xs_list, ys_list)
                 return xs_list, ys_list
         raise NotImplementedError
