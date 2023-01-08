@@ -101,13 +101,13 @@ def process_masks(masks, config, training, do_copy=True):
                     pass
                 case 1:  # replace with a random mask
                     low = 0
-                    high = config.mask_pad_token_id  # 3
+                    high = config.mask_size - 2  # 4 - 2
                     size = m.shape
-                    # in range of [0, 2]
+                    # in range of [0, 1]
                     m = torch.randint(low=low, high=high, size=size)
                 case 2:  # replace with an inference mask
                     m = torch.full(m.shape, config.mask_infer_token_id)
-                case other:
+                case _:
                     raise NotImplementedError
             new_masks.append(m)
     else:
@@ -118,10 +118,13 @@ def process_masks(masks, config, training, do_copy=True):
 def pad_masks(xs, masks, config):
     pad_masks = torch.full(xs.shape, config.mask_pad_token_id)
     for i in range(pad_masks.shape[0]):
+        # get the index of the first pad token
         pad_idx = (xs[i] != config.pad_token_id).sum().item()
         pad_masks[i][:pad_idx] = masks[i][:pad_idx]
         # the first token is always 0 to delete bos
         pad_masks[i][0] = config.mask_delete_token_id
+        # the last valid token is always 1 to keep eos
+        pad_masks[i][pad_idx-1] = config.mask_keep_token_id
     return pad_masks
 
 def unify_white_space(x: str) -> str:

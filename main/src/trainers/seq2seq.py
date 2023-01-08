@@ -66,7 +66,7 @@ class Trainer(BaseTrainer):
         # model graph
         self.model = helper.get_model(self.config).to(self.config.device)
         self.config.num_parameters = f'{sum(p.numel() for p in self.model.parameters() if p.requires_grad):,}'
-        # optimizer
+        # init optimizer
         optim_params = helper.get_optim_params(self.model, self.config)
         self.optimizer = torch.optim.AdamW(optim_params, lr=self.config.learning_rate)
         # save config
@@ -136,24 +136,28 @@ class Trainer(BaseTrainer):
                 self.config.test_size = len(dataset)
         # update config
         self.config.train_size = len(train_dataset)
-        self.config.max_steps = int(128*(self.config.train_size/self.config.train_batch_size))
-        # get scheduler
-        self.scheduler = get_linear_schedule_with_warmup(
-            optimizer=self.optimizer
-            , num_warmup_steps=self.config.warmup_steps
-            , num_training_steps=self.config.max_steps
-            )
+        self.config.max_steps = int(self.config.max_epoch*(self.config.train_size/self.config.train_batch_size))
+
+    def update_io(self):
+        # update I/O
+        PT_NAME = f'{self.config.train_size}_{self.config.val_size}_{self.config.test_size}.pt'
+        PKL_NAME = f'{self.config.train_size}_{self.config.val_size}_{self.config.test_size}.pkl'
+        TXT_NAME = f'{self.config.train_size}_{self.config.val_size}_{self.config.test_size}.txt'
         # to save checkpoint
-        self.config.CKPT_PT = f'{self.config.train_size}_{self.config.val_size}_{self.config.test_size}.pt'
-        self.config.CKPT_PT = os.path.join(self.config.CKPT_PATH, self.config.CKPT_PT)
+        self.config.CKPT_PT = os.path.join(self.config.CKPT_PATH, PT_NAME)
+        os.remove(self.config.CKPT_PT) if os.path.exists(self.config.CKPT_PT) else None
         # to save log in txt
-        self.config.LOG_TXT = f'{self.config.train_size}_{self.config.val_size}_{self.config.test_size}.txt'
-        self.config.LOG_TXT = os.path.join(self.config.LOG_PATH, self.config.LOG_TXT)
+        self.config.LOG_TXT = os.path.join(self.config.LOG_PATH, TXT_NAME)
         os.remove(self.config.LOG_TXT) if os.path.exists(self.config.LOG_TXT) else None
         # to save log in pickle
-        self.config.LOG_PKL = f'{self.config.train_size}_{self.config.val_size}_{self.config.test_size}.pkl'
-        self.config.LOG_PKL = os.path.join(self.config.LOG_PATH, self.config.LOG_PKL)
+        self.config.LOG_PKL = os.path.join(self.config.LOG_PATH, PKL_NAME)
         os.remove(self.config.LOG_PKL) if os.path.exists(self.config.LOG_PKL) else None
+        # to save results in pickle
+        self.config.RESULTS_PKL = os.path.join(self.config.RESULTS_PATH, PKL_NAME)
+        os.remove(self.config.RESULTS_PKL) if os.path.exists(self.config.RESULTS_PKL) else None
+        # to save test results in pickle
+        self.config.TEST_PKL = os.path.join(self.config.TEST_PATH, PKL_NAME)
+        os.remove(self.config.TEST_PKL) if os.path.exists(self.config.TEST_PKL) else None
         # initialize logger
         init_logger(self.config)
         logger.info('Initialized logger.')
@@ -191,23 +195,6 @@ class Trainer(BaseTrainer):
                     epoch_ys_ += ys_
                     # break
             return epoch_loss / epoch_steps, epoch_xs, epoch_ys, epoch_ys_
-        # elif mode == 'val':
-        #     epoch_loss, epoch_steps = 0., 0
-        #     for (raw_xs, raw_ys), inputs_dict in dataloader:
-        #         # move to device
-        #         inputs_dict = {k: v.to(self.config.device) for k, v in inputs_dict.items() if v is not None}
-        #         # model feedward
-        #         ys_, loss = self.model(**inputs_dict)
-        #         # post processing
-        #         ys_ = torch.argmax(ys_, dim=-1).cpu().detach()
-        #         ys_ = self.tokenizer.batch_decode(ys_, skip_special_tokens=True)
-        #         epoch_loss += loss.item()
-        #         epoch_steps += 1
-        #         epoch_xs += raw_xs
-        #         epoch_ys += raw_ys
-        #         epoch_ys_ += ys_
-        #         # break
-        #     return epoch_loss / epoch_steps, epoch_xs, epoch_ys, epoch_ys_
         else:
             for (raw_xs, raw_ys), inputs_dict in dataloader:
                 # move to device
@@ -225,6 +212,14 @@ class Trainer(BaseTrainer):
     def train(self):
         # get dataloader
         self.setup_dataloader()
+        # init scheduler
+        self.scheduler = get_linear_schedule_with_warmup(
+            optimizer=self.optimizer
+            , num_warmup_steps=self.config.warmup_steps
+            , num_training_steps=self.config.max_steps
+            )
+        # update I/O
+        self.update_io()
         # restore the trainer from the checkpint if needed
         if self.config.load_ckpt:
             self.load_ckpt()

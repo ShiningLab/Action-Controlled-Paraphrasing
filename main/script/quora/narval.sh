@@ -9,11 +9,11 @@
 #SBATCH -J shining  # job name
 #SBATCH --mail-type=ALL  # email notification for certain types of events
 #SBATCH --mail-user=ning.shi@ualberta.ca  # email address for notification
-#SBATCH -e twitterurl_mask_0.error  # error log
-#SBATCH -o twitterurl_mask_0.out  # output log
+#SBATCH -e ori_quora_mask_0.error  # error log
+#SBATCH -o ori_quora_mask_0.out  # output log
 
 MODEL=$(echo 'tfm')  # tfm
-TASK=$(echo 'twitterurl')  # ori_quora, sep_quora, twitterurl
+TASK=$(echo 'ori_quora')  # ori_quora, sep_quora, twitterurl
 SEED=$(echo '0')  # 0, 1, 2, 3, 4
 MASK=$(echo 'True') # if enable mask control
 
@@ -24,7 +24,7 @@ python main.py \
     --task=$TASK \
     --seed=$SEED \
     --mask=$MASK \
-    --mask_weights 0.8 0.1 0.1 \
+    --mask_weights 0.7 0.0 0.3 \
     --x_x_copy=False \
     --y_x_switch=False \
     --ld=False \

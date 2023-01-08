@@ -30,7 +30,7 @@ def init_args():
     # ori_quora for original Quora Question Pair
     # sep_quora for newly separated Quora Question Pair
     # twitterurl for original Twitter URL Paraphrasing
-    parser.add_argument('--task', type=str, default='twitterurl')
+    parser.add_argument('--task', type=str, default='ori_quora')
     # mask control
     parser.add_argument('--mask', type=str2bool, default=True)
     # 0 for remove, 1 for keep, 2 for inference, 3 for padding
@@ -85,6 +85,8 @@ def init_args():
     # evaluation
     parser.add_argument('--keymetric', type=str, default='ibleu0.8')  # validation
     parser.add_argument('--val_patience', type=int, default=32)  # w.r.t. epoch
+    # mask control needs more epochs to fully converge
+    parser.add_argument('--max_epoch', type=int, default=1)
     parser.add_argument('--eval_size', type=int, default=4000)  # for a fast training evaluation
     parser.add_argument('--num_beams', type=int, default=8)
     # save as argparse space
@@ -121,15 +123,21 @@ class Config():
         self.TARGET_TRANSLATOR_PATH = os.path.join(self.LM_PATH, self.tgt_translator)
         os.makedirs(self.TARGET_TRANSLATOR_PATH, exist_ok=True)
         # checkpoints
-        self.train_size, self.val_size, self.test_size = 310302, 4000, 20000
         self.CKPT_PATH = os.path.join(
             self.RESOURCE_PATH, 'ckpts', str(self.mask), self.task, self.model, str(self.seed)
             )
-        os.makedirs(self.CKPT_PATH, exist_ok=True)
-        self.CKPT_PT = f'{self.train_size}_{self.val_size}_{self.test_size}.pt'
-        self.CKPT_PT = os.path.join(self.CKPT_PATH, self.CKPT_PT)
         # log
         self.LOG_PATH = os.path.join(
             self.RESOURCE_PATH, 'log', str(self.mask), self.task, self.model, str(self.seed)
             )
         os.makedirs(self.LOG_PATH, exist_ok=True)
+        # results
+        self.RESULTS_PATH = os.path.join(
+            self.RESOURCE_PATH, 'results', str(self.mask), self.task, self.model, str(self.seed)
+            )
+        os.makedirs(self.RESULTS_PATH, exist_ok=True)
+        # test
+        self.TEST_PATH = os.path.join(
+            self.RESOURCE_PATH, 'test', str(self.mask), self.task, self.model, str(self.seed)
+            )
+        os.makedirs(self.TEST_PATH, exist_ok=True)

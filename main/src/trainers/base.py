@@ -47,7 +47,6 @@ class BaseTrainer(object):
             self.log_dict[mode]['best_eval'] = []
         self.log_dict['start_time'] = datetime.datetime.now()
         self.log_dict['best_val_metric'] = 0.
-        # self.log_dict['best_val_metric'] = float('inf')
 
     def setup_results_dict(self):
         self.results_dict = {}
@@ -74,7 +73,8 @@ class BaseTrainer(object):
         ckpt_to_load =  torch.load(self.config.CKPT_PT, map_location=self.config.device) 
         self.step = ckpt_to_load['step']
         self.epoch = ckpt_to_load['epoch']
-        self.val_epoch  = ckpt_to_load['val_epoch']
+        if 'val_epoch' in ckpt_to_load:
+            self.val_epoch  = ckpt_to_load['val_epoch']
         self.log_dict = ckpt_to_load['log_dict']
         self.model.load_state_dict(ckpt_to_load['model'])
         self.optimizer.load_state_dict(ckpt_to_load['optimizer'])
