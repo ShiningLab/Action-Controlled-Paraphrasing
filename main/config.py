@@ -39,8 +39,9 @@ def init_args():
     parser.add_argument('--mask_keep_token_id', type=int, default=1)
     parser.add_argument('--mask_infer_token_id', type=int, default=2)
     parser.add_argument('--mask_pad_token_id', type=int, default=3)
-    # keep, random, infer
-    parser.add_argument('--mask_weights', nargs='+', type=float, default=[0.8, 0.1, 0.1])
+    # keep, copy, random, infer
+    parser.add_argument(
+        '--mask_weights', nargs='+', type=float, default=[0.7, 0.1, 0.1, 0.1])
     # data augmentation
     parser.add_argument(
         '--augs'
@@ -86,7 +87,7 @@ def init_args():
     parser.add_argument('--keymetric', type=str, default='ibleu0.8')  # validation
     parser.add_argument('--val_patience', type=int, default=32)  # w.r.t. epoch
     # mask control needs more epochs to fully converge
-    parser.add_argument('--max_epoch', type=int, default=1)
+    parser.add_argument('--max_epoch', type=int, default=256)
     parser.add_argument('--eval_size', type=int, default=4000)  # for a fast training evaluation
     parser.add_argument('--num_beams', type=int, default=8)
     # save as argparse space
@@ -103,6 +104,7 @@ class Config():
         # load config from parser
         for k,v in kwargs.items():
             setattr(self, k, v)
+        self.mask_weights_str = '_'.join([str(_) for _ in self.mask_weights])
         # I/O
         self.CURR_PATH = os.path.dirname(os.path.realpath(__file__))
         self.RESOURCE_PATH = os.path.join(self.CURR_PATH, 'res')
@@ -124,20 +126,25 @@ class Config():
         os.makedirs(self.TARGET_TRANSLATOR_PATH, exist_ok=True)
         # checkpoints
         self.CKPT_PATH = os.path.join(
-            self.RESOURCE_PATH, 'ckpts', str(self.mask), self.task, self.model, str(self.seed)
+            self.RESOURCE_PATH, 'ckpts', self.task
+            , str(self.mask), self.model, self.mask_weights_str, str(self.seed)
             )
+        os.makedirs(self.CKPT_PATH, exist_ok=True)
         # log
         self.LOG_PATH = os.path.join(
-            self.RESOURCE_PATH, 'log', str(self.mask), self.task, self.model, str(self.seed)
+            self.RESOURCE_PATH, 'log', self.task
+            , str(self.mask), self.model, self.mask_weights_str, str(self.seed)
             )
         os.makedirs(self.LOG_PATH, exist_ok=True)
         # results
         self.RESULTS_PATH = os.path.join(
-            self.RESOURCE_PATH, 'results', str(self.mask), self.task, self.model, str(self.seed)
+            self.RESOURCE_PATH, 'results', self.task
+            , str(self.mask), self.model, self.mask_weights_str, str(self.seed)
             )
         os.makedirs(self.RESULTS_PATH, exist_ok=True)
         # test
         self.TEST_PATH = os.path.join(
-            self.RESOURCE_PATH, 'test', str(self.mask), self.task, self.model, str(self.seed)
+            self.RESOURCE_PATH, 'test', self.task
+            , str(self.mask),  self.model, self.mask_weights_str, str(self.seed)
             )
         os.makedirs(self.TEST_PATH, exist_ok=True)

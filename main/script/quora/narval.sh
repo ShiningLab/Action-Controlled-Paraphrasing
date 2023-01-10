@@ -9,13 +9,13 @@
 #SBATCH -J shining  # job name
 #SBATCH --mail-type=ALL  # email notification for certain types of events
 #SBATCH --mail-user=ning.shi@ualberta.ca  # email address for notification
-#SBATCH -e ori_quora_mask_0.error  # error log
-#SBATCH -o ori_quora_mask_0.out  # output log
+#SBATCH -e ori_quora_ls.error  # error log
+#SBATCH -o ori_quora_0.out  # output log
 
 MODEL=$(echo 'tfm')  # tfm
 TASK=$(echo 'ori_quora')  # ori_quora, sep_quora, twitterurl
 SEED=$(echo '0')  # 0, 1, 2, 3, 4
-MASK=$(echo 'True') # if enable mask control
+MASK=$(echo 'False') # if enable mask control
 
 module load python/3.10.2
 source /home/shining/pyvenv/cmput651/bin/activate
@@ -24,7 +24,7 @@ python main.py \
     --task=$TASK \
     --seed=$SEED \
     --mask=$MASK \
-    --mask_weights 0.7 0.0 0.3 \
+    --mask_weights 0.6 0.0 0.4 \
     --x_x_copy=False \
     --y_x_switch=False \
     --ld=False \
@@ -58,5 +58,6 @@ python main.py \
     --warmup_steps=5000 \
     --keymetric=ibleu0.8 \
     --val_patience=32 \
+    --max_epoch=256 \
     --eval_size=4000 \
     --num_beams=8

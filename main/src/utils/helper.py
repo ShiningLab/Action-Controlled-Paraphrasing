@@ -43,7 +43,7 @@ def show_sample(xs: list, ys: list, if_return: bool=False) -> None:
 
 def show_rand_sample(srcs, tars, preds): 
     src, tar, pred = random.choice([(src, tar, pred) for src, tar, pred in zip(srcs, tars, preds)])
-    return '\nsrc: {}\ntar: {}\npred: {}'.format(src, tar, pred)
+    return 'src: {}\ntar: {}\npred: {}'.format(src, tar, pred)
 
 def set_seed(seed):
     # random
@@ -94,10 +94,11 @@ def process_masks(masks, config, training, do_copy=True):
         masks = copy.deepcopy(masks)
     if training:
         new_masks = []
+        rands = []
         for m in masks:
-            rand = np.random.choice(range(3), p=config.mask_weights)
+            rand = np.random.choice(range(4), p=config.mask_weights)
             match rand:
-                case 0:  # keep the label mask
+                case 0:  # keep the original label mask
                     pass
                 case 1:  # replace with a random mask
                     low = 0
@@ -105,15 +106,18 @@ def process_masks(masks, config, training, do_copy=True):
                     size = m.shape
                     # in range of [0, 1]
                     m = torch.randint(low=low, high=high, size=size)
-                case 2:  # replace with an inference mask
+                case 2:  # replace with a copy mask
+                    m = torch.full(m.shape, config.mask_keep_token_id)
+                case 3:  # replace with an inference mask
                     m = torch.full(m.shape, config.mask_infer_token_id)
                 case _:
                     raise NotImplementedError
             new_masks.append(m)
+            rands.append(rand)
     else:
         # inference mask only for validation and test
         new_masks = [torch.full(m.shape, config.mask_infer_token_id) for m in masks]
-    return new_masks
+    return new_masks, rands
 
 def pad_masks(xs, masks, config):
     pad_masks = torch.full(xs.shape, config.mask_pad_token_id)

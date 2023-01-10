@@ -29,7 +29,7 @@ class Paraphraser(object):
     def initialize(self):
         # setup random seed
         helper.set_seed(self.config.seed)
-        
+
     def train(self):
         # trainer
         self.trainer = helper.get_trainer(self.config)
@@ -44,8 +44,9 @@ def main():
     pp = Paraphraser()
     # train
     pp.train()
-    # test
-    pp.test()
+    # test various mask inference
+    if pp.config.mask:
+        pp.test()
 
 if __name__ == '__main__':
       main()

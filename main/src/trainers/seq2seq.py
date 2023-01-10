@@ -77,31 +77,28 @@ class Trainer(BaseTrainer):
         data.sort(key=len, reverse=True)
         if self.config.mask:
             raw_xs, raw_ys, xs, ys, masks = map(list, zip(*data))
-            xs, ys = torch.stack(xs), torch.stack(ys)
             # apply mask strategy
-            masks = helper.process_masks(masks, self.config, self.model.training)
+            masks, rands = helper.process_masks(masks, self.config, True)
+            # for copy mask
+            for i in range(len(ys)):
+                # keep=0, random=1, copy=2, infer=3
+                if rands[i] == 2:
+                    ys[i] = copy.deepcopy(xs[i])[1:]
+            xs, ys = torch.stack(xs), torch.stack(ys)
             # mask padding
             masks = torch.stack(masks)
             masks = helper.pad_masks(xs, masks, self.config)
-            # if self.mode in ['train', 'val']:
             if self.model.training:
                 inputs_dict = {'xs': xs, 'ys': ys, 'masks': masks}
-            # elif self.mode in ['test']:
             else:
                 inputs_dict = {'xs': xs, 'masks': masks}
-            # else:
-                # raise NotImplementedError
         else:
             raw_xs, raw_ys, xs, ys = map(list, zip(*data))
             xs, ys = torch.stack(xs), torch.stack(ys)
-            # if self.mode in ['train', 'val']:
             if self.model.training:
                 inputs_dict = {'xs': xs, 'ys': ys}
-            # elif self.mode in ['test']:
             else:
                 inputs_dict = {'xs': xs}
-            # else:
-                # raise NotImplementedError
         return (raw_xs, raw_ys), inputs_dict
 
     def setup_dataloader(self):
@@ -255,6 +252,9 @@ class Trainer(BaseTrainer):
                 self.log_dict['end_time'] = datetime.datetime.now()
                 helper.save_pickle(self.config.LOG_PKL, self.log_dict)
                 logger.info('Log saved as {}.'.format(self.config.LOG_PKL))
+                # save results
+                helper.save_pickle(self.config.RESULTS_PKL, self.results_dict)
+                logger.info('Results saved as {}.'.format(self.config.RESULTS_PKL))
                 logger.info('Training completed.')
                 break
             # break
@@ -303,5 +303,8 @@ class Trainer(BaseTrainer):
             self.log_dict['end_time'] = datetime.datetime.now()
             helper.save_pickle(self.config.LOG_PKL, self.log_dict)
             logger.info('Log saved as {}.'.format(self.config.LOG_PKL))
+            # save results
+            helper.save_pickle(self.config.RESULTS_PKL, self.results_dict)
+            logger.info('Results saved as {}.'.format(self.config.RESULTS_PKL))
         else:
             self.val_epoch += 1
