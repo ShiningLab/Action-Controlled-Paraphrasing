@@ -17,7 +17,8 @@ Mask-Controlled-Paraphrase-Generation
 │   │   ├── ckpts
 │   │   ├── data
 │   │   │   ├── ori_quora.pkl
-│   │   │   └── sep_quora.pkl
+│   │   │   ├── ori_quora.pkl
+│   │   │   └── twitterurl.pkl
 │   │   ├── lm
 │   │   │   ├── bert-base-uncased
 │   │   │   ├── deberta-large-mnli
@@ -35,7 +36,7 @@ Mask-Controlled-Paraphrase-Generation
 │         │   ├── base.py
 │         │   └── utils.py
 │         ├── datasets
-│         │   └── quora.py
+│         │   └── base.py
 │         ├── models
 │         │   ├── encoder.py
 │         │   ├── lm.py
