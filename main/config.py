@@ -39,7 +39,7 @@ def init_args():
     parser.add_argument('--mask_keep_token_id', type=int, default=1)
     parser.add_argument('--mask_infer_token_id', type=int, default=2)
     parser.add_argument('--mask_pad_token_id', type=int, default=3)
-    # keep, copy, random, infer
+    # keep, random, copy, infer
     parser.add_argument(
         '--mask_weights', nargs='+', type=float, default=[0.7, 0.1, 0.1, 0.1])
     # data augmentation
@@ -104,7 +104,10 @@ class Config():
         # load config from parser
         for k,v in kwargs.items():
             setattr(self, k, v)
-        self.mask_weights_str = '_'.join([str(_) for _ in self.mask_weights])
+        if self.mask:
+            self.mask_weights_str = '_'.join([str(_) for _ in self.mask_weights])
+        else:
+            self.mask_weights_str = str(False)
         # I/O
         self.CURR_PATH = os.path.dirname(os.path.realpath(__file__))
         self.RESOURCE_PATH = os.path.join(self.CURR_PATH, 'res')

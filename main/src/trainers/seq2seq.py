@@ -78,12 +78,13 @@ class Trainer(BaseTrainer):
         if self.config.mask:
             raw_xs, raw_ys, xs, ys, masks = map(list, zip(*data))
             # apply mask strategy
-            masks, rands = helper.process_masks(masks, self.config, True)
+            masks, rands = helper.process_masks(masks, self.config, self.model.training)
             # for copy mask
-            for i in range(len(ys)):
-                # keep=0, random=1, copy=2, infer=3
-                if rands[i] == 2:
-                    ys[i] = copy.deepcopy(xs[i])[1:]
+            if self.model.training:
+                for i in range(len(ys)):
+                    # keep=0, random=1, copy=2, infer=3
+                    if rands[i] == 2:
+                        ys[i] = copy.deepcopy(xs[i])[1:]
             xs, ys = torch.stack(xs), torch.stack(ys)
             # mask padding
             masks = torch.stack(masks)

@@ -84,17 +84,17 @@ def get_optim_params(model, config):
 def process_masks(masks, config, training, do_copy=True):
     """
     for training:
-        + 80% of the time: keep mask
-        + 10% of the time: replace with a random mask
-        + 10% of the time: replace with an inference mask
+        + keep mask
+        + replace with a random mask
+        + replace with a copy mask
+        + replace with an inference mask
     for inference:
-        use mask inference token id only
+        + use mask inference token id only
     """
     if do_copy:
         masks = copy.deepcopy(masks)
+    new_masks, rands = [], []
     if training:
-        new_masks = []
-        rands = []
         for m in masks:
             rand = np.random.choice(range(4), p=config.mask_weights)
             match rand:
