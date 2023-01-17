@@ -8,7 +8,7 @@ __email__ = 'Email'
 # built-in
 import os, argparse
 # public
-from transformers import EncoderDecoderConfig
+from transformers import AutoConfig
 
 
 # helper function
@@ -27,12 +27,17 @@ def init_args():
     # random seed
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--load_ckpt', type=str2bool, default=False)
+    # lstm for seq2seq LSTM with Attention
+    # tfm for vanilla transformer
+    # em_tfm for transformer with pretrained embedding
+    # en_tfm for transformer with pretrained encoder
+    parser.add_argument('--model', type=str, default='lstm')
     # ori_quora for original Quora Question Pair
     # sep_quora for newly separated Quora Question Pair
     # twitterurl for original Twitter URL Paraphrasing
     parser.add_argument('--task', type=str, default='ori_quora')
     # mask control
-    parser.add_argument('--mask', type=str2bool, default=True)
+    parser.add_argument('--mask', type=str2bool, default=False)
     # 0 for remove, 1 for keep, 2 for inference, 3 for padding
     parser.add_argument('--mask_size', type=int, default=4)
     parser.add_argument('--mask_delete_token_id', type=int, default=0)
@@ -41,7 +46,7 @@ def init_args():
     parser.add_argument('--mask_pad_token_id', type=int, default=3)
     # keep, random, copy, infer
     parser.add_argument(
-        '--mask_weights', nargs='+', type=float, default=[0.7, 0.1, 0.1, 0.1])
+        '--mask_weights', nargs='+', type=float, default=[0.2, 0.1, 0.1, 0.6])
     # data augmentation
     parser.add_argument(
         '--augs'
@@ -63,12 +68,17 @@ def init_args():
     parser.add_argument('--scorer', type=str, default='deberta-large-mnli')
     parser.add_argument('--src_translator', type=str, default='opus-mt-ROMANCE-en')
     parser.add_argument('--tgt_translator', type=str, default='opus-mt-en-ROMANCE')
-    # tfm for vanilla transformer
-    parser.add_argument('--model', type=str, default='tfm')
-    parser.add_argument('--hidden_size', type=int, default=450)
-    parser.add_argument('--num_hidden_layers', type=int, default=3)
-    parser.add_argument('--num_attention_heads', type=int, default=9)
-    parser.add_argument('--intermediate_size', type=int, default=1024)
+    # model
+    # encoder
+    parser.add_argument('--en_hidden_size', type=int, default=450)
+    parser.add_argument('--en_num_hidden_layers', type=int, default=3)
+    parser.add_argument('--en_num_attention_heads', type=int, default=9)
+    parser.add_argument('--en_intermediate_size', type=int, default=1024)
+    # decoder
+    parser.add_argument('--de_hidden_size', type=int, default=450)
+    parser.add_argument('--de_num_hidden_layers', type=int, default=3)
+    parser.add_argument('--de_num_attention_heads', type=int, default=9)
+    parser.add_argument('--de_intermediate_size', type=int, default=1024)
     # data
     parser.add_argument('--stemming', type=str2bool, default=True)
     parser.add_argument('--en_max_len', type=int, default=20)
@@ -104,10 +114,21 @@ class Config():
         # load config from parser
         for k,v in kwargs.items():
             setattr(self, k, v)
+        # mask weights
         if self.mask:
             self.mask_weights_str = '_'.join([str(_) for _ in self.mask_weights])
         else:
             self.mask_weights_str = str(False)
+        # lstm
+        if self.model == 'lstm':
+            self.en_num_attention_heads = False
+            self.en_intermediate_size = False
+            self.de_num_attention_heads = False
+            self.de_intermediate_size = False
+            self.num_beams = False
+        # en_tfm
+        if self.model == 'en_tfm':
+            self.encoder = 'bert_uncased_L-4_H-512_A-8'
         # I/O
         self.CURR_PATH = os.path.dirname(os.path.realpath(__file__))
         self.RESOURCE_PATH = os.path.join(self.CURR_PATH, 'res')
@@ -151,3 +172,17 @@ class Config():
             , str(self.mask),  self.model, self.mask_weights_str, str(self.seed)
             )
         os.makedirs(self.TEST_PATH, exist_ok=True)
+        # update model hyper-parameters
+        encoder_config = AutoConfig.from_pretrained(self.ENCODER_PATH)
+        self.en_vocab_size = encoder_config.vocab_size
+        decoder_config = AutoConfig.from_pretrained(self.DECODER_PATH)
+        self.de_vocab_size = decoder_config.vocab_size
+        match self.model:
+            case 'em_tfm':
+                self.en_hidden_size = encoder_config.hidden_size
+                self.en_num_attention_heads = encoder_config.num_attention_heads
+            case 'en_tfm':
+                self.en_hidden_size = encoder_config.hidden_size
+                self.en_num_hidden_layers = encoder_config.num_hidden_layers
+                self.en_num_attention_heads = encoder_config.num_attention_heads
+                self.en_intermediate_size = encoder_config.intermediate_size

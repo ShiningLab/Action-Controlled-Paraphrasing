@@ -9,7 +9,8 @@ from transformers import BertModel, AlbertModel, RobertaModel, XLMRobertaModel, 
 
 
 LAN_MODELS = {
-    'bert-base-uncased': BertModel
+    'bert_uncased_L-4_H-512_A-8': BertModel
+    , 'bert-base-uncased': BertModel
     , 'bert-large-uncased': BertModel
     , 'albert-base-v2': AlbertModel
     , 'albert-large-v2': AlbertModel

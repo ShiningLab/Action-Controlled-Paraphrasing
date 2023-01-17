@@ -1,20 +1,21 @@
 #!/bin/bash
-#SBATCH --time=0-16:00:00  # d-hh:mm:ss
-#SBATCH --account=def-kondrakb  # user account
+#SBATCH --time=0-24:00:00  # d-hh:mm:ss
+#SBATCH --account=def-kondrak  # user account
 #SBATCH --ntasks=1  # number of task you want to run
 #SBATCH --nodes=1  # number of nodes
-#SBATCH --cpus-per-task=12  # CPU cores/threads
-#SBATCH --gpus-per-node=a100:1  # Number of GPU(s) per node
-#SBATCH --mem=127500M  # memory per node
+#SBATCH --cpus-per-task=8  # CPU cores/threads
+#SBATCH --gpus-per-node=v100l:1  # GPU cores/threads 
+#SBATCH --mem=48000M  # memory per node
+#SBATCH --constraint=cascade  # node specification
 #SBATCH -J shining  # job name
 #SBATCH --mail-type=ALL  # email notification for certain types of events
 #SBATCH --mail-user=ning.shi@ualberta.ca  # email address for notification
-#SBATCH -e twitterurl_mask_8011_0.error  # error log
-#SBATCH -o twitterurl_mask_8011_0.out  # output log
+#SBATCH -e ori_quora_mask_2116_0.error  # error log
+#SBATCH -o ori_quora_mask_2116_0.out  # output log
 
 SEED=$(echo '0')  # 0, 1, 2, 3, 4
-TASK=$(echo 'twitterurl')  # ori_quora, sep_quora, twitterurl
-MASK=$(echo 'True') # if enable mask control
+TASK=$(echo 'ori_quora')  # ori_quora, sep_quora, twitterurl
+MASK=$(echo 'True')  # if enable mask control
 MODEL=$(echo 'tfm')  # tfm
 
 module load python/3.10.2
@@ -24,7 +25,7 @@ python main.py \
     --task=$TASK \
     --seed=$SEED \
     --mask=$MASK \
-    --mask_weights 0.8 0.0 0.1 0.1 \
+    --mask_weights 0.2 0.1 0.1 0.6 \
     --x_x_copy=False \
     --y_x_switch=False \
     --ld=False \
@@ -51,7 +52,7 @@ python main.py \
     --test=True \
     --train_batch_size=64 \
     --eval_batch_size=512 \
-    --num_workers=12 \
+    --num_workers=8 \
     --learning_rate=5e-5 \
     --max_grad_norm=1.0 \
     --weight_decay=0.01 \

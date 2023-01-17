@@ -12,7 +12,7 @@ import transformers
 import numpy as np
 import torch
 # private
-from src.models import tfm
+from src.models import lstm, tfm, em_tfm, en_tfm
 from src.trainers import seq2seq as seq2seq_trainer
 from src.testers import seq2seq as seq2seq_tester
 
@@ -60,9 +60,17 @@ def set_seed(seed):
     torch.backends.cudnn.benchmark = False
 
 def get_model(config):
-    if config.model == 'tfm':
-        return tfm.ModelGraph(config)
-    raise NotImplementedError
+    match config.model:
+        case 'lstm':
+            return lstm.ModelGraph(config)
+        case 'tfm':
+            return tfm.ModelGraph(config)
+        case 'em_tfm':
+            return em_tfm.ModelGraph(config)
+        case 'en_tfm':
+            return en_tfm.ModelGraph(config)
+        case _:
+            raise NotImplementedError
 
 def get_trainer(config):
     return seq2seq_trainer.Trainer(config)

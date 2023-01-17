@@ -91,7 +91,7 @@ class Evaluater(object):
         self.get_eval()
 
     def get_eval(self):
-        ibleu9_list, ibleu8_list, ibleu7_list = [], [], []
+        ibleu7_list, ibleu8_list, ibleu9_list = [], [], []
         bleu2_list, bleu3_list, bleu4_list= [], [], []
         meteor_list, rouge1_list, rouge2_list, rougeL_list = [], [], [], []
         for y, y_, tk_x, tk_y, tk_y_ in zip(self.ys, self.ys_, self.tk_xs, self.tk_ys, self.tk_ys_):
@@ -100,9 +100,9 @@ class Evaluater(object):
             ibleu9, ibleu8, ibleu7 = self.get_ibleu(tk_x, tk_y_, bleu4)
             meteor = self.get_meteor(tk_y, tk_y_)
             rouge1, rouge2, rougeL = self.get_rouge_scores(y, y_)
-            ibleu9_list.append(ibleu9)
-            ibleu8_list.append(ibleu8)
             ibleu7_list.append(ibleu7)
+            ibleu8_list.append(ibleu8)
+            ibleu9_list.append(ibleu9)
             bleu2_list.append(bleu2)
             bleu3_list.append(bleu3)
             bleu4_list.append(bleu4)
@@ -113,9 +113,9 @@ class Evaluater(object):
         self.results = {}
         self.results['loss'] = self.loss
         self.results['perplexity'] = self.get_perplexity() if self.loss < float('inf') else float('inf')
-        self.results['ibleu0.9'] = float(np.mean(ibleu9_list))
-        self.results['ibleu0.8'] = float(np.mean(ibleu8_list))
         self.results['ibleu0.7'] = float(np.mean(ibleu7_list))
+        self.results['ibleu0.8'] = float(np.mean(ibleu8_list))
+        self.results['ibleu0.9'] = float(np.mean(ibleu9_list))
         self.results['bleu2'] = float(np.mean(bleu2_list))
         self.results['bleu3'] = float(np.mean(bleu3_list))
         self.results['bleu4'] = float(np.mean(bleu4_list))
