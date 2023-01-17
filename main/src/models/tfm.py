@@ -22,16 +22,16 @@ class ModelGraph(nn.Module):
         self.update_config(**kwargs)
         # encoder
         encoder_config = AutoConfig.from_pretrained(self.config.ENCODER_PATH)
-        encoder_config.hidden_size = self.config.hidden_size
-        encoder_config.num_hidden_layers = self.config.num_hidden_layers
-        encoder_config.num_attention_heads = self.config.num_attention_heads
-        encoder_config.intermediate_size = self.config.intermediate_size
+        encoder_config.hidden_size = self.config.en_hidden_size
+        encoder_config.num_hidden_layers = self.config.en_num_hidden_layers
+        encoder_config.num_attention_heads = self.config.en_num_attention_heads
+        encoder_config.intermediate_size = self.config.en_intermediate_size
         # decoder
         decoder_config = AutoConfig.from_pretrained(self.config.DECODER_PATH)
-        decoder_config.hidden_size = self.config.hidden_size
-        decoder_config.num_hidden_layers = self.config.num_hidden_layers
-        decoder_config.num_attention_heads = self.config.num_attention_heads
-        decoder_config.intermediate_size = self.config.intermediate_size
+        decoder_config.hidden_size = self.config.de_hidden_size
+        decoder_config.num_hidden_layers = self.config.de_num_hidden_layers
+        decoder_config.num_attention_heads = self.config.de_num_attention_heads
+        decoder_config.intermediate_size = self.config.de_intermediate_size
         decoder_config.is_decoder = True
         decoder_config.add_cross_attention = True
         decoder_config.decoder_start_token_id = self.config.bos_token_id
@@ -48,13 +48,11 @@ class ModelGraph(nn.Module):
         # initialize model
         self.tfm = EncoderDecoderModel(config=tfm_config)
         self.config.model_config = self.tfm.config
-        self.config.en_vocab_size = self.config.model_config.encoder.vocab_size
-        self.config.de_vocab_size = self.config.model_config.decoder.vocab_size
         # mask embedding layer
         if self.config.mask:
             self.mask_embeddings = nn.Embedding(
                 num_embeddings=self.config.mask_size
-                , embedding_dim=self.config.hidden_size
+                , embedding_dim=self.config.en_hidden_size
                 , padding_idx=self.config.mask_pad_token_id
                 )
 

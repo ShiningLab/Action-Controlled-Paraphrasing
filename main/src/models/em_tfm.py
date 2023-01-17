@@ -50,8 +50,6 @@ class ModelGraph(nn.Module):
         # initialize model
         self.tfm = EncoderDecoderModel(config=tfm_config)
         self.config.model_config = self.tfm.config
-        self.config.en_vocab_size = self.config.model_config.encoder.vocab_size
-        self.config.de_vocab_size = self.config.model_config.decoder.vocab_size
         # load pretrained embedding
         encoder = LAN_MODELS[self.config.encoder].from_pretrained(
             self.config.ENCODER_PATH)

@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --time=0-24:00:00  # d-hh:mm:ss
-#SBATCH --account=def-kondrak  # user account
+#SBATCH --time=0-01:00:00  # d-hh:mm:ss
+#SBATCH --account=rrg-lilimou  # user account
 #SBATCH --ntasks=1  # number of task you want to run
 #SBATCH --nodes=1  # number of nodes
 #SBATCH --cpus-per-task=8  # CPU cores/threads
@@ -10,17 +10,16 @@
 #SBATCH -J shining  # job name
 #SBATCH --mail-type=ALL  # email notification for certain types of events
 #SBATCH --mail-user=ning.shi@ualberta.ca  # email address for notification
-#SBATCH -e ori_quora_mask_2116_0.error  # error log
-#SBATCH -o ori_quora_mask_2116_0.out  # output log
+#SBATCH -e ori_quora_em_tfm_0.error  # error log
+#SBATCH -o ori_quora_em_tfm_0.out  # output log
 
 SEED=$(echo '0')  # 0, 1, 2, 3, 4
 TASK=$(echo 'ori_quora')  # ori_quora, sep_quora, twitterurl
-MASK=$(echo 'True')  # if enable mask control
-MODEL=$(echo 'tfm')  # tfm
+MASK=$(echo 'False')  # if enable mask control
+MODEL=$(echo 'em_tfm')  # lstm, tfm, em_tfm, en_tfm
 
 module load python/3.10.2
-source /home/shining/pyvenv/cmput651/bin/activate
-cd /home/shining/scratch/cmput651/main
+cd /home/zijunwu/scratch/shining/Mask-Controlled-Paraphrase-Generation/main
 python main.py \
     --task=$TASK \
     --seed=$SEED \
