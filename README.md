@@ -1,4 +1,4 @@
-# Mask-Controlled-Paraphrase-Generation
+# Mask-Controlled-Paraphrasing
 
 This repository is for the project Mask Controlled Paraphrase Generation.
 
