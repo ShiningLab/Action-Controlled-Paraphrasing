@@ -7,6 +7,7 @@
 *.pt
 lm/
 raw/
+wandb/
 archive/
 .DS_Store
 
