@@ -48,10 +48,14 @@ class S2STrainer(object):
             )
         self.wandb_logger.experiment.config.update(self.config)
         # tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(self.config.ENCODER_PATH)
+        if self.config.pretrain == 'tfg':
+            self.tokenizer = AutoTokenizer.from_pretrained(self.config.TOKENIZER_PATH)
+        else:
+            self.tokenizer = AutoTokenizer.from_pretrained(self.config.LM_PATH)
         self.config.bos_token_id = self.tokenizer.cls_token_id
         self.config.eos_token_id = self.tokenizer.sep_token_id
         self.config.pad_token_id = self.tokenizer.pad_token_id
+        self.config.vocab_size = len(self.tokenizer)
         # model
         self.model = model.S2S(self.config, self.tokenizer)
         # datamodule
